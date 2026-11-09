@@ -77,6 +77,13 @@ else
 fi
 cd "$DIR"
 
+# This script runs under umask 077, so a fresh clone lands as 600/700 and the
+# containers (which run as non-root) cannot read their own code (EACCES on
+# server/src/index.ts, gate.py, lab.py). Normalise the checkout; secrets stay 600.
+chmod -R a+rX "$DIR"
+[ -f "$DIR/.env" ] && chmod 600 "$DIR/.env"
+find "$DIR" -maxdepth 1 -name '.env.bak-*' -exec chmod 600 {} + 2>/dev/null || true
+
 # 4. .env (never overwritten) ------------------------------------------------------------------
 # Reads a plain, safe value for KEY from the old .env copy. The old (Vultr) inference key is never read.
 oldv() {
