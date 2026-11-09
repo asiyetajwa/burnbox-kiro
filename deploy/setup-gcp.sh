@@ -106,8 +106,9 @@ COMPOSE_PROJECT_NAME=$PROJECT
 # Put the Gemini key on the VULTR_INFERENCE_API_KEY line by hand (e.g. nano .env). It is supplied separately.
 VULTR_INFERENCE_API_KEY=
 VULTR_INFERENCE_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai/
-VULTR_MODEL=gemini-2.5-flash
+VULTR_MODEL=gemini-3.5-flash-lite
 STUB_LLM=0
+LLM_TIMEOUT_MS=120000
 SANDBOX_RUNTIME=$RT
 PUBLIC_PORT=$PP
 RUNS_PER_HOUR=$RH
