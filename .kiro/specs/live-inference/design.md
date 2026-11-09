@@ -6,7 +6,7 @@
 - `server/src/index.ts`: health `inference` is `'stub'` or `config.llm.model || 'auto'`; startup log likewise.
 - `server/src/config.ts`: base URL trailing slash is stripped because paths are appended (`/chat/completions`, `/models`). Env var names unchanged.
 - `web/app.js`: header shows the inference value from health instead of testing for `'vultr'`.
-- `.env.example`, `docker-compose.yml`: Gemini base URL and `VULTR_MODEL=gemini-2.5-flash` defaults.
+- `.env.example`, `docker-compose.yml`: Gemini base URL and `VULTR_MODEL=gemini-3.5-flash-lite` defaults.
 
 ## Unchanged
 Floor logic (`floorOf`, `emailFloor`), `RANK`-based "raise never lower" merge, fallback-to-rules on error, prompt, and the key being read only in `config.ts`.
