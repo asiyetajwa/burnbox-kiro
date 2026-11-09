@@ -117,7 +117,7 @@
   // Health: is the box ready?
   api('/api/health').then((h) => {
     const ok = h.sandbox.docker && h.sandbox.box;
-    $('#where').innerHTML = `<i style="${ok ? '' : 'background:var(--hot);box-shadow:0 0 10px var(--hot)'}"></i>Vultr · ${ok ? 'Box Ready' : 'Box Offline'}${h.inference && h.inference !== 'stub' ? ` · ${h.inference}` : ''}`;
+    $('#where').innerHTML = `<i style="${ok ? '' : 'background:var(--hot);box-shadow:0 0 10px var(--hot)'}"></i>Google Cloud · ${ok ? 'Box Ready' : 'Box Offline'}${h.inference && h.inference !== 'stub' ? ` · ${h.inference}` : ''}`;
     if (h.forwardTo) $('#fwd-addr').textContent = h.forwardTo;
     else { $('#fwd-addr').textContent = 'check@your-burnbox-domain'; $('#fwd-note').textContent = 'Forwarding switches on when this Burn Box has its own mail domain. Until then, drop the saved email below.'; }
   }).catch(() => { $('#where').innerHTML = '<i style="background:var(--hot);box-shadow:0 0 10px var(--hot)"></i>Server Unreachable'; });
