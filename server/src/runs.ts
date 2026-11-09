@@ -10,6 +10,7 @@ import { factsFrom, writeEmailVerdict, verdictBy, writeVerdict, type ChildSummar
 import { signReceipt, type Receipt } from './receipt.ts';
 
 export type Kind = 'file' | 'link' | 'email';
+export type Via = 'web' | 'email' | 'quick';
 export type Status = 'queued' | 'running' | 'judging' | 'done' | 'error';
 export type Run = {
   id: string;
@@ -18,7 +19,8 @@ export type Run = {
   size: number;
   sha256: string;
   sample?: string;
-  via?: 'web' | 'email';
+  via?: Via;
+  teamId?: string;
   parent?: string;
   children?: string[];
   status: Status;
@@ -75,13 +77,16 @@ export function subscribe(id: string, fn: (e: BoxEvent & { at: string }) => void
 }
 
 export function getRun(id: string): Run | undefined { return runs.get(id); }
-export function listRuns(): Run[] { return [...runs.values()].filter((r) => !r.parent).sort((a, b) => b.createdAt.localeCompare(a.createdAt)); }
+/** Top-level runs, newest first. With a team id: that team's runs. Without: the public list, which holds only team-less runs. */
+export function listRuns(teamId?: string): Run[] {
+  return [...runs.values()].filter((r) => !r.parent && (teamId ? r.teamId === teamId : !r.teamId)).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
 
-export function createRun(kind: Kind, name: string, input: Buffer, opts: { sample?: string; parent?: string; via?: 'web' | 'email'; front?: boolean } = {}): Run {
+export function createRun(kind: Kind, name: string, input: Buffer, opts: { sample?: string; parent?: string; via?: Via; teamId?: string; front?: boolean } = {}): Run {
   counter += 1;
   const r: Run = {
     id: `BBX-${String(counter).padStart(4, '0')}`, kind, name, size: input.length,
-    sha256: createHash('sha256').update(input).digest('hex'), sample: opts.sample, parent: opts.parent, via: opts.via ?? 'web',
+    sha256: createHash('sha256').update(input).digest('hex'), sample: opts.sample, parent: opts.parent, via: opts.via ?? 'web', teamId: opts.teamId,
     status: 'queued', createdAt: new Date().toISOString(), events: [],
   };
   runs.set(r.id, r);
@@ -175,11 +180,11 @@ async function finishEmail(r: Run, report: Record<string, unknown>): Promise<voi
 
   // Fan out: one fresh box per attachment and per link.
   const kids: Run[] = [];
-  for (const a of atts) if (a.data) kids.push(createRun('file', a.name, Buffer.from(a.data, 'base64'), { parent: r.id, front: true }));
+  for (const a of atts) if (a.data) kids.push(createRun('file', a.name, Buffer.from(a.data, 'base64'), { parent: r.id, teamId: r.teamId, front: true }));
   for (const l of links) {
     let name = l.href;
     try { const u = new URL(l.href); name = `${u.host}${u.pathname === '/' ? '' : u.pathname}`; } catch { /* keep the raw link */ }
-    kids.push(createRun('link', name.slice(0, 120), Buffer.from(l.href), { parent: r.id, front: true }));
+    kids.push(createRun('link', name.slice(0, 120), Buffer.from(l.href), { parent: r.id, teamId: r.teamId, front: true }));
   }
   r.children = kids.map((k) => k.id);
   push(r, { type: 'stage', stage: 'fanout', boxes: kids.map((k) => ({ id: k.id, kind: k.kind, name: k.name })) });

@@ -26,7 +26,18 @@ export function publicKeyPem(): string {
 /** Stable JSON: keys sorted at every level, so the same receipt always signs the same bytes. */
 export function canonical(v: unknown): string {
   if (Array.isArray(v)) return `[${v.map(canonical).join(',')}]`;
-  if (v && typeof v === 'object') return `{${Object.keys(v as Record<string, unknown>).sort().map((k) => `${JSON.stringify(k)}:${canonical((v as Record<string, unknown>)[k])}`).join(',')}}`;
+  if (v && typeof v === 'object') {
+    const o = v as Record<string, unknown>;
+    // Undefined members are skipped, like JSON.stringify does, so a receipt survives being saved as JSON.
+    return `{${Object.keys(o).filter((k) => o[k] !== undefined).sort().map((k) => `${JSON.stringify(k)}:${canonical(o[k])}`).join(',')}}`;
+  }
+  return JSON.stringify(v);
+}
+
+/** The form used before the fix: an undefined member was written as the text `undefined`. Verify-only. */
+function legacyCanonical(v: unknown): string {
+  if (Array.isArray(v)) return `[${v.map(legacyCanonical).join(',')}]`;
+  if (v && typeof v === 'object') return `{${Object.keys(v as Record<string, unknown>).sort().map((k) => `${JSON.stringify(k)}:${legacyCanonical((v as Record<string, unknown>)[k])}`).join(',')}}`;
   return JSON.stringify(v);
 }
 
@@ -38,7 +49,11 @@ export function signReceipt(body: Record<string, unknown>): Receipt {
 
 export function verifyReceipt(r: Receipt): boolean {
   try {
-    return verify(null, Buffer.from(canonical(r.body)), pub, Buffer.from(r.signature, 'base64'));
+    const sig = Buffer.from(r.signature, 'base64');
+    if (verify(null, Buffer.from(canonical(r.body)), pub, sig)) return true;
+    // Older file and link receipts were signed with `parent: undefined`, which a saved copy no longer has.
+    if (!('parent' in r.body)) return verify(null, Buffer.from(legacyCanonical({ ...r.body, parent: undefined })), pub, sig);
+    return false;
   } catch {
     return false;
   }

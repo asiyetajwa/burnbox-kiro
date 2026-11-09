@@ -6,6 +6,7 @@ import { config } from './config.ts';
 import { loadKeys, publicKeyPem, verifyReceipt, type Receipt } from './receipt.ts';
 import { createRun, getRun, listRuns, loadRuns, looksLikeEmail, sampleInput, samplesList, subscribe, type Run } from './runs.ts';
 import { mailAddress, startMail } from './mail.ts';
+import { cleanName, createTeam, loadTeams, publicTeam, teamByCode } from './teams.ts';
 import { sandboxStatus, sweep } from './sandbox.ts';
 
 const TYPES: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png', '.ico': 'image/x-icon', '.webmanifest': 'application/manifest+json' };
@@ -75,6 +76,17 @@ function summary(r: Run): Record<string, unknown> {
   };
 }
 
+// Team creation is limited too, so a public demo cannot be filled with teams.
+const teamMakers = new Map<string, number[]>();
+function mayMakeTeam(ip: string): boolean {
+  const now = Date.now();
+  const list = (teamMakers.get(ip) ?? []).filter((t) => now - t < 3600_000);
+  if (list.length >= 10) { teamMakers.set(ip, list); return false; }
+  list.push(now);
+  teamMakers.set(ip, list);
+  return true;
+}
+
 const validUrl = (s: string): boolean => {
   try {
     const u = new URL(s);
@@ -98,26 +110,56 @@ async function api(req: IncomingMessage, res: ServerResponse, path: string, url:
     } catch { send(res, 400, { error: 'Send the receipt JSON exactly as downloaded.' }); }
     return;
   }
-  if (path === '/api/runs' && req.method === 'GET') { send(res, 200, listRuns().slice(0, 50).map(summary)); return; }
+  if (path === '/api/teams' && req.method === 'POST') {
+    if (!mayMakeTeam(ip)) { send(res, 429, { error: 'This address has made enough teams for the hour. Try again later.' }); return; }
+    let name: string | undefined;
+    try { name = cleanName((JSON.parse((await readBody(req, 4 * 1024)).toString('utf8')) as { name?: unknown }).name); } catch { name = undefined; }
+    if (!name) { send(res, 400, { error: 'Give the team a name of 1 to 60 characters.' }); return; }
+    send(res, 201, createTeam(name)); // the only time the code is sent
+    return;
+  }
+  if (path === '/api/teams/join' && req.method === 'POST') {
+    let code: unknown;
+    try { code = (JSON.parse((await readBody(req, 4 * 1024)).toString('utf8')) as { code?: unknown }).code; } catch { code = undefined; }
+    const team = teamByCode(code);
+    if (!team) { send(res, 400, { error: 'That team code was not found. Check it and try again.' }); return; }
+    send(res, 200, publicTeam(team));
+    return;
+  }
+  if (path === '/api/runs' && req.method === 'GET') {
+    const code = url.searchParams.get('team');
+    if (code === null) { send(res, 200, listRuns().slice(0, 50).map(summary)); return; }
+    const team = teamByCode(code);
+    if (!team) { send(res, 400, { error: 'That team code was not found. Check it and try again.' }); return; }
+    send(res, 200, listRuns(team.id).slice(0, 50).map(summary));
+    return;
+  }
   if (path === '/api/runs' && req.method === 'POST') {
+    const codeHeader = req.headers['x-team-code'];
+    let teamId: string | undefined;
+    if (codeHeader !== undefined) {
+      const team = teamByCode(Array.isArray(codeHeader) ? codeHeader[0] : codeHeader);
+      if (!team) { send(res, 400, { error: 'That team code was not found. Leave the team and join again.' }); return; }
+      teamId = team.id;
+    }
     if (!allowed(ip)) { send(res, 429, { error: 'This address has used its runs for the hour. Try again later.' }); return; }
     const ct = String(req.headers['content-type'] ?? '');
     let body: Buffer;
     try { body = await readBody(req, ct.includes('json') ? 16 * 1024 : config.maxUpload); }
     catch { send(res, 413, { error: `Files can be up to ${String(config.maxUpload / 1048576)} MB.` }); return; }
     if (ct.includes('json')) {
-      let o: { sample?: string; url?: string };
-      try { o = JSON.parse(body.toString('utf8')) as { sample?: string; url?: string }; } catch { send(res, 400, { error: 'The request could not be read.' }); return; }
+      let o: { sample?: string; url?: string; via?: string };
+      try { o = JSON.parse(body.toString('utf8')) as { sample?: string; url?: string; via?: string }; } catch { send(res, 400, { error: 'The request could not be read.' }); return; }
       if (o.sample) {
         const s = sampleInput(o.sample);
         if (!s) { send(res, 404, { error: 'No such test sample.' }); return; }
-        send(res, 202, publicRun(createRun(s.kind, s.name, s.input, { sample: o.sample })));
+        send(res, 202, publicRun(createRun(s.kind, s.name, s.input, { sample: o.sample, teamId })));
         return;
       }
       if (o.url) {
         if (!validUrl(o.url)) { send(res, 400, { error: 'Paste a full link that starts with http:// or https://.' }); return; }
         const u = new URL(o.url);
-        send(res, 202, publicRun(createRun('link', `${u.host}${u.pathname === '/' ? '' : u.pathname}`.slice(0, 120), Buffer.from(o.url))));
+        send(res, 202, publicRun(createRun('link', `${u.host}${u.pathname === '/' ? '' : u.pathname}`.slice(0, 120), Buffer.from(o.url), { teamId, via: o.via === 'quick' ? 'quick' : undefined })));
         return;
       }
       send(res, 400, { error: 'Choose a file, a link or a test sample.' });
@@ -125,7 +167,7 @@ async function api(req: IncomingMessage, res: ServerResponse, path: string, url:
     }
     if (!body.length) { send(res, 400, { error: 'The file is empty.' }); return; }
     const name = decodeURIComponent(url.searchParams.get('name') ?? 'sample').slice(0, 120);
-    send(res, 202, publicRun(createRun(looksLikeEmail(name, body) ? 'email' : 'file', name, body)));
+    send(res, 202, publicRun(createRun(looksLikeEmail(name, body) ? 'email' : 'file', name, body, { teamId })));
     return;
   }
   const m = /^\/api\/runs\/(BBX-\d{4,})(\/events|\/receipt)?$/.exec(path);
@@ -167,6 +209,7 @@ async function serveStatic(res: ServerResponse, path: string): Promise<void> {
 
 loadKeys();
 loadRuns();
+loadTeams();
 const swept = await sweep().catch(() => 0);
 const server = createServer((req, res) => {
   const url = new URL(req.url ?? '/', 'http://local');

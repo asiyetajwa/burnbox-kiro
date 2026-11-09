@@ -124,7 +124,7 @@
 
   // Views.
   function show(v) {
-    for (const k of ['new', 'run', 'email', 'verdict', 'past']) $(`#v-${k}`).hidden = k !== v;
+    for (const k of ['new', 'run', 'email', 'verdict', 'past', 'quick', 'verify']) $(`#v-${k}`).hidden = k !== v;
     document.querySelectorAll('.nav button').forEach((b) => b.setAttribute('aria-current', (b.dataset.go === v || (v !== 'past' && b.dataset.go === 'new')) ? 'page' : 'false'));
     scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' });
   }
@@ -226,11 +226,15 @@
     if (!choice) return;
     $('#detonate').disabled = true;
     let run;
+    const th = team ? { 'x-team-code': team.code } : {};
     try {
-      if (choice.type === 'sample') run = await api('/api/runs', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ sample: choice.id }) });
-      else if (choice.type === 'url') run = await api('/api/runs', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ url: choice.url }) });
-      else run = await api(`/api/runs?name=${encodeURIComponent(choice.name)}`, { method: 'POST', headers: { 'content-type': 'application/octet-stream' }, body: choice.file });
-    } catch (e) { toast(e.message); $('#detonate').disabled = false; return; }
+      if (choice.type === 'sample') run = await api('/api/runs', { method: 'POST', headers: { ...th, 'content-type': 'application/json' }, body: JSON.stringify({ sample: choice.id }) });
+      else if (choice.type === 'url') run = await api('/api/runs', { method: 'POST', headers: { ...th, 'content-type': 'application/json' }, body: JSON.stringify({ url: choice.url }) });
+      else run = await api(`/api/runs?name=${encodeURIComponent(choice.name)}`, { method: 'POST', headers: { ...th, 'content-type': 'application/octet-stream' }, body: choice.file });
+    } catch (e) {
+      if (team && /team code was not found/i.test(e.message)) { dropTeam('This team was not found any more, so you have left it.'); }
+      toast(e.message); $('#detonate').disabled = false; return;
+    }
     watch(run);
   }
 
@@ -512,13 +516,67 @@
   $('#again').addEventListener('click', () => { reset(); show('new'); });
   $('#dl').addEventListener('click', () => { if (current) location.href = `/api/runs/${current.id}/receipt`; });
 
-  // Past runs.
-  async function loadPast() {
-    try {
-      const list = await api('/api/runs');
-      $('#past').innerHTML = list.length ? list.map((r) => `<tr data-id="${esc(r.id)}"><td class="m">${esc(r.id)}</td><td class="m">${esc(r.name)}</td><td>${r.verdict ? `<span class="pill ${CLS[r.verdict]}">${PILL[r.verdict]}</span>` : esc(r.status)}</td><td class="m">${r.canaries} of ${r.canariesPlanted}</td><td class="m">${r.egress}</td><td class="m">${esc(utc(r.destroyedAt).replace(' UTC', ''))}</td></tr>`).join('') : '<tr><td colspan="6">No runs yet. Detonate a test sample to see one here.</td></tr>';
-    } catch (e) { toast(e.message); }
+  // Team view: a shared list of runs behind a secret code kept in this browser. Not an account.
+  const TEAM_KEY = 'bb-team';
+  let team = null; // { code, name }
+  try { const t = JSON.parse(localStorage.getItem(TEAM_KEY) ?? 'null'); if (t && typeof t.code === 'string' && typeof t.name === 'string') team = t; } catch { /* ignore a damaged value */ }
+  const saveTeam = () => { try { if (team) localStorage.setItem(TEAM_KEY, JSON.stringify(team)); else localStorage.removeItem(TEAM_KEY); } catch { /* storage may be blocked */ } };
+  const postJson = (path, body) => api(path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+  function renderTeam() {
+    const made = !$('#team-made').hidden;
+    $('#team-in').hidden = Boolean(team) || made;
+    $('#team-on').hidden = !team || made;
+    if (team) $('#team-on-name').textContent = team.name;
+    $('#p-eyebrow').textContent = team ? 'Your Team' : 'Recent Public Runs';
   }
+  function dropTeam(msg) { team = null; saveTeam(); renderTeam(); if (msg) toast(msg); }
+  $('#team-new').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    try {
+      const t = await postJson('/api/teams', { name: $('#team-name').value });
+      team = { code: t.code, name: t.name }; saveTeam();
+      $('#team-made-code').textContent = t.code; $('#team-made').hidden = false;
+      $('#team-name').value = ''; renderTeam(); loadPast();
+    } catch (err) { toast(err.message); }
+  });
+  $('#team-made-copy').addEventListener('click', () => {
+    navigator.clipboard?.writeText($('#team-made-code').textContent).then(() => toast('Code copied'), () => { getSelection()?.selectAllChildren($('#team-made-code')); toast('Code selected, copy it from here'); });
+  });
+  $('#team-made-ok').addEventListener('click', () => { $('#team-made').hidden = true; $('#team-made-code').textContent = ''; renderTeam(); });
+  $('#team-join').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const code = $('#team-code').value.trim();
+    try {
+      const t = await postJson('/api/teams/join', { code });
+      team = { code, name: t.name }; saveTeam(); $('#team-code').value = '';
+      renderTeam(); loadPast(); toast(`Joined ${t.name}`);
+    } catch (err) { toast(err.message); }
+  });
+  $('#team-leave').addEventListener('click', () => { dropTeam('You left the team. Its runs are still there for anyone with the code.'); loadPast(); });
+
+  // Past runs. Filters apply to the rows already loaded (at most 50).
+  let pastList = [];
+  const filterIds = ['f-level', 'f-kind', 'f-date'];
+  function drawPast() {
+    const lv = $('#f-level').value, kd = $('#f-kind').value, dt = $('#f-date').value;
+    const rows = pastList.filter((r) => (!lv || r.verdict === lv) && (!kd || r.kind === kd) && (!dt || String(r.createdAt).slice(0, 10) === dt));
+    const empty = pastList.length ? 'No runs match these filters.' : team ? 'No runs in this team yet. Detonate something while the team is joined.' : 'No runs yet. Detonate a test sample to see one here.';
+    $('#past').innerHTML = rows.length ? rows.map((r) => `<tr data-id="${esc(r.id)}"><td class="m">${esc(r.id)}</td><td class="m">${esc(r.name)}</td><td>${r.verdict ? `<span class="pill ${CLS[r.verdict]}">${PILL[r.verdict]}</span>` : esc(r.status)}</td><td class="m">${r.canaries} of ${r.canariesPlanted}</td><td class="m">${r.egress}</td><td class="m">${esc(utc(r.destroyedAt).replace(' UTC', ''))}</td></tr>`).join('') : `<tr><td colspan="6">${empty}</td></tr>`;
+    $('#p-count').textContent = pastList.length ? `Showing ${rows.length} of the latest ${pastList.length} runs.` : '';
+  }
+  for (const id of filterIds) $(`#${id}`).addEventListener('input', drawPast);
+  $('#f-clear').addEventListener('click', () => { for (const id of filterIds) $(`#${id}`).value = ''; drawPast(); });
+  async function loadPast() {
+    renderTeam();
+    try {
+      pastList = await api(team ? `/api/runs?team=${encodeURIComponent(team.code)}` : '/api/runs');
+      drawPast();
+    } catch (e) {
+      if (team && /team code was not found/i.test(e.message)) { dropTeam('This team was not found any more, so you have left it.'); loadPast(); return; }
+      toast(e.message);
+    }
+  }
+  renderTeam();
   $('#past').addEventListener('click', async (e) => {
     const tr = e.target.closest('tr[data-id]');
     if (!tr) return;
@@ -527,6 +585,144 @@
 
   // Replay plays a finished run's recorded events back through the live view, in their real order.
   $('#replay').addEventListener('click', () => { if (current) watch(current); });
+
+  // Quick check: one link, one verdict card. Same POST /api/runs as the main view, tagged via: 'quick'.
+  const qOk = (v) => /^https?:\/\/[^\s/]+\.[^\s]+/.test(v);
+  const qSync = () => { $('#q-go').disabled = !qOk($('#q-link').value.trim()); };
+  $('#q-link').addEventListener('input', qSync);
+  $('#q-link').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !$('#q-go').disabled) quickCheck(); });
+  $('#q-go').addEventListener('click', quickCheck);
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+  async function quickCheck() {
+    const url = $('#q-link').value.trim();
+    if (!qOk(url)) return;
+    $('#q-go').disabled = true; $('#q-card').hidden = true;
+    $('#q-status').textContent = 'Opening the link in a sealed box. This takes about half a minute.';
+    try {
+      const th = team ? { 'x-team-code': team.code } : {};
+      const run = await api('/api/runs', { method: 'POST', headers: { ...th, 'content-type': 'application/json' }, body: JSON.stringify({ url, via: 'quick' }) });
+      let r = run;
+      for (let i = 0; i < 90 && r.status !== 'done' && r.status !== 'error'; i++) { await wait(2000); r = await api(`/api/runs/${run.id}`); }
+      if (r.status !== 'done' && r.status !== 'error') throw new Error('The check is taking too long. Open the run from Past Runs in a minute.');
+      quickCard(r);
+    } catch (e) {
+      if (team && /team code was not found/i.test(e.message)) dropTeam('This team was not found any more, so you have left it.');
+      $('#q-status').textContent = e.message;
+    }
+    qSync();
+  }
+  function quickCard(r) {
+    $('#q-card').hidden = false;
+    $('#q-run').textContent = `Run ${r.id}`;
+    $('#q-name').textContent = r.name;
+    $('#q-detail').setAttribute('href', `#${r.id}`);
+    if (!r.verdict) {
+      $('#q-head').textContent = 'No verdict.';
+      $('#q-summary').textContent = r.error || 'The box could not finish this check. Try again.';
+      $('#q-reasons').innerHTML = ''; $('#q-receipt').hidden = true;
+      $('#q-status').textContent = 'The check did not finish.';
+      return;
+    }
+    $('#q-head').textContent = r.verdict.headline || WORD[r.verdict.level];
+    $('#q-summary').textContent = r.verdict.summary;
+    $('#q-reasons').innerHTML = (r.verdict.reasons ?? []).map((t) => `<li><span>${esc(t)}</span></li>`).join('');
+    $('#q-receipt').hidden = !r.receipt; $('#q-receipt').setAttribute('href', `/api/runs/${r.id}/receipt`);
+    $('#q-status').textContent = `Verdict: ${PILL[r.verdict.level]}.`;
+  }
+  // Verify a receipt: server check plus a second check in the browser with the public key.
+  const MAX_RECEIPT = 64 * 1024;
+  const vfSync = () => { $('#vf-go').disabled = !$('#vf-text').value.trim(); };
+  $('#vf-text').addEventListener('input', vfSync);
+  $('#vf-file').addEventListener('change', async (e) => {
+    const f = e.target.files[0];
+    e.target.value = '';
+    if (!f) return;
+    $('#vf-card').hidden = true;
+    if (f.size > MAX_RECEIPT) { $('#vf-status').textContent = 'That file is too big to be a receipt. Receipts are under 64 KB.'; return; }
+    $('#vf-text').value = await f.text();
+    $('#vf-status').textContent = `Loaded ${f.name}. Press Check This Receipt.`;
+    vfSync();
+  });
+  $('#vf-go').addEventListener('click', verifyReceipt);
+  // Same rule as the server: keys sorted, undefined members skipped. legacy writes them as text, for receipts signed before the fix.
+  const canon = (v, legacy) => {
+    if (Array.isArray(v)) return `[${v.map((x) => canon(x, legacy)).join(',')}]`;
+    if (v && typeof v === 'object') return `{${Object.keys(v).filter((k) => legacy || v[k] !== undefined).sort().map((k) => `${JSON.stringify(k)}:${canon(v[k], legacy)}`).join(',')}}`;
+    return JSON.stringify(v);
+  };
+  const b64 = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
+  // true or false from the browser, or null when this browser cannot do the check.
+  async function browserVerify(rc) {
+    try {
+      if (!globalThis.crypto?.subtle) return null;
+      const pem = await api('/api/pubkey');
+      const key = await crypto.subtle.importKey('spki', b64(pem.replace(/-----[^-]+-----|\s/g, '')), { name: 'Ed25519' }, false, ['verify']);
+      const sig = b64(rc.signature);
+      const enc = new TextEncoder();
+      if (await crypto.subtle.verify('Ed25519', key, sig, enc.encode(canon(rc.body)))) return true;
+      if (!('parent' in rc.body)) return await crypto.subtle.verify('Ed25519', key, sig, enc.encode(canon({ ...rc.body, parent: undefined }, true)));
+      return false;
+    } catch {
+      return null; // no Ed25519 in this browser, or the key could not be loaded
+    }
+  }
+  function vfShow(state, word, reason, checks, rc) {
+    $('#vf-card').hidden = false;
+    $('#vf-top').className = `v-top ${state}`;
+    $('#vf-word').textContent = word;
+    $('#vf-reason').textContent = reason;
+    $('#vf-run').textContent = rc?.body?.run ? `Run ${rc.body.run}` : 'Receipt';
+    $('#vf-checks').innerHTML = checks.map((t) => `<li><span>${esc(t)}</span></li>`).join('');
+    const b = rc?.body ?? {};
+    const has = (k) => b[k] !== undefined && b[k] !== null && b[k] !== '';
+    const burned = has('boxesBurned') ? b.boxesBurned : (b.destroyed === true ? 1 : 0);
+    const gone = 'not in this receipt';
+    $('#vf-label').textContent = state === 'safe' ? 'Details in this receipt' : 'Details in this receipt (not trusted)';
+    $('#vf-dl').innerHTML = [
+      ['Run id', has('run') ? b.run : gone], ['Verdict', has('verdict') ? (PILL[b.verdict] ?? b.verdict) : gone],
+      ['Verdict written by', has('verdictBy') ? b.verdictBy : gone], ['Box destroyed', has('destroyedAt') ? utc(String(b.destroyedAt)) : gone],
+      ['Boxes burned', burned],
+    ].map(([k, val]) => `<dt>${k}</dt><dd>${esc(val)}</dd>`).join('');
+    $('#vf-note').hidden = state !== 'safe';
+  }
+  async function verifyReceipt() {
+    const text = $('#vf-text').value.trim();
+    $('#vf-card').hidden = true;
+    let rc;
+    try { rc = JSON.parse(text); } catch { $('#vf-status').textContent = 'That is not receipt text. Paste the receipt exactly as you downloaded it.'; return; }
+    if (!rc || typeof rc !== 'object' || !rc.body || typeof rc.body !== 'object' || Array.isArray(rc.body) || typeof rc.signature !== 'string' || rc.algorithm !== 'ed25519') {
+      $('#vf-status').textContent = 'This does not look like a Burn Box receipt. It needs a body, a signature and the ed25519 label.';
+      return;
+    }
+    $('#vf-go').disabled = true;
+    $('#vf-status').textContent = 'Checking the signature.';
+    try {
+      const server = (await api('/api/verify', { method: 'POST', headers: { 'content-type': 'application/json' }, body: text })).valid === true;
+      const local = await browserVerify(rc);
+      const checks = [
+        `This server says: ${server ? 'the signature is good' : 'the signature does not match'}.`,
+        `Your browser says: ${local === null ? 'this check was not available here' : local ? 'the signature is good' : 'the signature does not match'}.`,
+      ];
+      if (local !== null && local !== server) vfShow('sus', 'Not sure.', 'The two checks disagree. Do not trust this receipt.', checks, rc);
+      else if (server) vfShow('safe', 'VALID.', 'This receipt is genuine. Nobody has changed it.', checks, rc);
+      else vfShow('mal', 'INVALID.', 'The signature does not match this receipt. It was changed, or it did not come from this Burn Box.', checks, rc);
+      $('#vf-status').textContent = server && local !== false ? 'Receipt is valid.' : 'Receipt is not valid.';
+    } catch (e) {
+      $('#vf-status').textContent = e.message;
+    }
+    vfSync();
+  }
+
+  function route() {
+    if (location.hash === '#quick') { show('quick'); $('#q-link').focus(); }
+    if (location.hash === '#verify') { show('verify'); $('#vf-text').focus(); }
+  }
+  addEventListener('hashchange', () => {
+    route();
+    const h = /^#(BBX-\d{4,})$/.exec(location.hash);
+    if (h) api(`/api/runs/${h[1]}`).then((r) => { current = r; if (r.verdict) renderVerdict(r); else watch(r); }).catch(() => {});
+  });
+  route();
 
   // A shared link to a run opens it directly; #replay-BBX-0001 plays it back from the start.
   const m = /^#(replay-)?(BBX-\d{4,})$/.exec(location.hash);

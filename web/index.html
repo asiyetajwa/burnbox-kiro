@@ -78,6 +78,11 @@ p { margin: 0; }
 .link-in input { font: 400 15px/1 var(--mono); padding: 17px 20px; border-radius: 999px; border: 0; background: var(--well); box-shadow: var(--sink); color: var(--fg); width: 100%; }
 .link-in input:focus { outline: none; box-shadow: var(--sink), 0 0 0 1.5px var(--amber-b); }
 .link-in small { color: var(--fg-3); font-size: 13px; }
+.link-in textarea { font: 400 13px/1.5 var(--mono); padding: 16px 18px; border-radius: 20px; border: 0; background: var(--well); box-shadow: var(--sink); color: var(--fg); width: 100%; resize: vertical; }
+.link-in textarea:focus { outline: none; box-shadow: var(--sink), 0 0 0 1.5px var(--amber-b); }
+.verify-link { font-size: 14px; }
+.verify-link a { color: var(--fg-2); text-decoration: underline; text-underline-offset: 3px; }
+.verify-link a:focus-visible { outline: 2px solid var(--amber-b); outline-offset: 3px; }
 .go-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
 .go-row p { font-size: 13px; color: var(--fg-3); max-width: 36ch; }
 .side { display: grid; gap: 14px; align-content: start; padding-top: 8px; }
@@ -228,6 +233,21 @@ tbody tr { cursor: pointer; } tbody tr:hover td { background: rgba(255, 255, 255
 .pill.sus { color: var(--sus); } .pill.sus::before { background: var(--sus); box-shadow: 0 0 8px var(--sus); }
 .pill.mal { color: var(--hot); } .pill.mal::before { background: var(--hot); box-shadow: 0 0 8px var(--hot); }
 
+
+/* Team view */
+.team { padding: 20px 22px; display: grid; gap: 12px; }
+.team-note { color: var(--fg-2); font-size: 13.5px; font-weight: 300; max-width: 70ch; margin-top: 6px; }
+.team-forms { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin-top: 12px; }
+.team label { display: grid; gap: 7px; font-size: 13.5px; font-weight: 500; }
+.team .row { display: flex; gap: 10px; }
+.team input, .team select { font: 400 14px/1 var(--mono); padding: 13px 16px; border-radius: 999px; border: 0; background: var(--well); box-shadow: var(--sink); color: var(--fg); min-width: 0; flex: 1; }
+.team input:focus, .team select:focus { outline: none; box-shadow: var(--sink), 0 0 0 1.5px var(--amber-b); }
+.team .btn { padding: 12px 20px; font-size: 14px; }
+.team-on-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.team-on-row b { font-size: 20px; font-weight: 600; letter-spacing: -.02em; }
+.filters { display: flex; gap: 12px; flex-wrap: wrap; align-items: end; margin-top: 12px; }
+.filters label { min-width: 150px; }
+
 .mock-tag { margin-top: 34px; font-size: 12.5px; color: var(--fg-3); font-weight: 300; }
 
 @media (max-width: 900px) {
@@ -330,6 +350,7 @@ tbody tr { cursor: pointer; } tbody tr:hover td { background: rgba(255, 255, 255
             <li>The box is destroyed. An AI on Vultr reads the record and writes the verdict.</li>
           </ol>
         </div>
+        <p class="verify-link"><a href="#verify">Got a receipt? Check that it is real.</a></p>
       </aside>
     </section>
   </main>
@@ -418,16 +439,106 @@ tbody tr { cursor: pointer; } tbody tr:hover td { background: rgba(255, 255, 255
     </section>
   </main>
 
+  <!-- Quick check: one link, one verdict card -->
+  <main id="v-quick" hidden>
+    <section class="new" style="grid-template-columns:minmax(0,640px)">
+      <div>
+        <h1>Is this link <span>safe to click?</span></h1>
+        <p class="lede">Paste one link. Burn Box opens it in a sealed box and tells you what it found.</p>
+        <div class="intake dev">
+          <div class="link-in">
+            <label for="q-link">Paste the link</label>
+            <input id="q-link" type="url" inputmode="url" placeholder="https://" autocomplete="off">
+          </div>
+          <div class="go-row">
+            <button class="btn go" type="button" id="q-go" disabled>Check This Link</button>
+            <p id="q-status" role="status" aria-live="polite"></p>
+          </div>
+        </div>
+        <article class="v-card dev" id="q-card" hidden style="margin-top:24px">
+          <div class="v-top"><p class="eyebrow" id="q-run"></p><h2 id="q-head"></h2><p id="q-name"></p></div>
+          <div class="v-body">
+            <p id="q-summary"></p>
+            <ul class="tried" id="q-reasons"></ul>
+            <div class="actions">
+              <a class="btn ghost" id="q-receipt" href="#quick">Download Receipt</a>
+              <a class="btn ghost" id="q-detail" href="#quick">See the Full Run</a>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <!-- Verify a receipt: public, no login -->
+  <main id="v-verify" hidden>
+    <section class="new" style="grid-template-columns:minmax(0,680px)">
+      <div>
+        <h1>Is this receipt <span>real?</span></h1>
+        <p class="lede">Paste a Burn Box receipt, or choose the .json file you downloaded. Burn Box checks the signature and tells you if the receipt is genuine.</p>
+        <div class="intake dev">
+          <div class="link-in">
+            <label for="vf-text">Paste the receipt</label>
+            <textarea id="vf-text" rows="8" spellcheck="false" autocomplete="off" placeholder='{"body": {...}, "signature": "...", "algorithm": "ed25519"}'></textarea>
+          </div>
+          <label class="drop small" id="vf-drop">
+            <input type="file" id="vf-file" accept=".json,application/json">
+            <b>Or choose the receipt file</b>
+            <small>A .json file, up to 64 KB</small>
+          </label>
+          <div class="go-row">
+            <button class="btn go" type="button" id="vf-go" disabled>Check This Receipt</button>
+            <p id="vf-status" role="status" aria-live="polite"></p>
+          </div>
+        </div>
+        <article class="v-card dev" id="vf-card" hidden style="margin-top:24px">
+          <div class="v-top" id="vf-top"><p class="eyebrow" id="vf-run"></p><h2 id="vf-word"></h2><p id="vf-reason"></p></div>
+          <div class="v-body">
+            <ul class="tried" id="vf-checks"></ul>
+            <div class="receipt" style="padding:0"><p class="eyebrow" id="vf-label" style="margin-bottom:10px">Details</p><dl id="vf-dl"></dl></div>
+            <small id="vf-note">A valid receipt means this Burn Box signed exactly these details. It does not say a file or link is safe. Read the verdict for that.</small>
+          </div>
+        </article>
+      </div>
+    </section>
+  </main>
+
   <!-- Past runs -->
   <main id="v-past" hidden>
     <section class="past">
-      <div><p class="eyebrow">Your Team</p><h2>Past Runs</h2></div>
+      <div><p class="eyebrow" id="p-eyebrow">Recent Public Runs</p><h2>Past Runs</h2></div>
+      <div class="team dev" id="team">
+        <div id="team-in">
+          <p class="eyebrow">Team View</p>
+          <p class="team-note">A team is a shared view of your runs, not an account. There are no passwords. Anyone who has the team code can see the team's runs and add to them. Keep the code private.</p>
+          <div class="team-forms">
+            <form id="team-new" autocomplete="off"><label for="team-name">Start a team</label><div class="row"><input id="team-name" maxlength="60" placeholder="Team name" required><button class="btn ghost" type="submit">Create</button></div></form>
+            <form id="team-join" autocomplete="off"><label for="team-code">Join with a code</label><div class="row"><input id="team-code" placeholder="Team code" spellcheck="false" required><button class="btn ghost" type="submit">Join</button></div></form>
+          </div>
+        </div>
+        <div id="team-made" hidden>
+          <p class="eyebrow">Team Created</p>
+          <p class="team-note">Save this code now. It is shown only once and cannot be recovered. Share it only with people who should see these runs.</p>
+          <div class="addr"><code id="team-made-code"></code><button type="button" class="btn ghost" id="team-made-copy">Copy</button><button type="button" class="btn go" id="team-made-ok">I Saved It</button></div>
+        </div>
+        <div id="team-on" hidden>
+          <div class="team-on-row"><div><p class="eyebrow">Your Team</p><b id="team-on-name"></b></div><button type="button" class="btn ghost" id="team-leave">Leave Team</button></div>
+          <p class="team-note">New runs from this browser go to this team and stay off the public list. Anyone who knows a run number can still open that run.</p>
+          <div class="filters" role="group" aria-label="Filter the team's runs">
+            <label>Verdict<select id="f-level"><option value="">All</option><option value="safe">Safe</option><option value="suspicious">Suspicious</option><option value="malicious">Malicious</option></select></label>
+            <label>Kind<select id="f-kind"><option value="">All</option><option value="file">File</option><option value="link">Link</option><option value="email">Email</option></select></label>
+            <label>Date (UTC)<input type="date" id="f-date"></label>
+            <button type="button" class="btn ghost" id="f-clear">Clear</button>
+          </div>
+        </div>
+      </div>
       <div class="table-wrap dev">
         <table>
           <thead><tr><th>Run</th><th>What</th><th>Verdict</th><th>Canaries</th><th>Blocked</th><th>Burned At (UTC)</th></tr></thead>
           <tbody id="past"></tbody>
         </table>
       </div>
+      <p class="mock-tag" id="p-count" role="status"></p>
     </section>
   </main>
 
