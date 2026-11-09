@@ -22,7 +22,7 @@ Put this exact tree (burnbox-kiro, sessions 1 to 4) on the demo host at 136.109.
 - 1.4 The deploy script is `deploy/setup-gcp.sh`. It clones `asiyetajwa/burnbox-kiro`, never `asiyetajwa/burnbox`.
 
 ### R2. Host `.env`
-- 2.1 Values: `VULTR_INFERENCE_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai/`, `VULTR_MODEL=gemini-2.5-flash`, `STUB_LLM=0`, `SANDBOX_RUNTIME=runsc`, `PUBLIC_PORT=80`, `RUNS_PER_HOUR=30`, `MAX_CONCURRENT_RUNS=2`, `MAIL_DOMAIN=burnbox.dribble360.com`.
+- 2.1 Values: `VULTR_INFERENCE_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai/`, `VULTR_MODEL=gemini-3.5-flash-lite`, `STUB_LLM=0`, `SANDBOX_RUNTIME=runsc`, `PUBLIC_PORT=80`, `RUNS_PER_HOUR=30`, `MAX_CONCURRENT_RUNS=2`, `MAIL_DOMAIN=burnbox.dribble360.com`.
 - 2.2 `VULTR_INFERENCE_API_KEY` is the Gemini key, typed on the host by the deployer. It is never written to the repo, this spec, the script, a log or a chat. The old Vultr key is not reused.
 - 2.3 Before anything changes, the current `/opt/burnbox/.env` is copied to `/opt/burnbox/.env.bak-<stamp>` (travels with the old checkout to `/opt/burnbox.bak-<stamp>/`) and to `/var/backups/burnbox/env-<stamp>` (mode 600).
 - 2.4 The script never overwrites an existing `.env` and refuses to start the stack while the key line is empty or `STUB_LLM=1`.
@@ -35,12 +35,12 @@ Put this exact tree (burnbox-kiro, sessions 1 to 4) on the demo host at 136.109.
 
 ### R4. Restart and health
 - 4.1 Box images are rebuilt only if `sandbox/` changed. The app is started with `docker compose -p burnbox up -d --build`.
-- 4.2 `GET http://136.109.165.109/api/health` shows `ok: true`, `sandbox.docker`, `sandbox.box` and `sandbox.browser` all true, `sandbox.runtime` `runsc`, and `inference` equal to `gemini-2.5-flash` (not `stub`).
+- 4.2 `GET http://136.109.165.109/api/health` shows `ok: true`, `sandbox.docker`, `sandbox.box` and `sandbox.browser` all true, `sandbox.runtime` `runsc`, and `inference` equal to `gemini-3.5-flash-lite` (not `stub`).
 - 4.3 `GET http://136.109.165.109/` returns 200.
 
 ### R5. Acceptance test (in order)
 - 5.1 Old-receipt capture: before the redeploy, at least one real receipt issued by the current host is downloaded and saved.
-- 5.2 Live inference (live-inference tasks 8.1 to 8.5): health not stub; benign file sample correct (safe); invoice email end to end correct; one link correct; at least one receipt has `verdictBy` "Gemini (gemini-2.5-flash)".
+- 5.2 Live inference (live-inference tasks 8.1 to 8.5): health not stub; benign file sample correct (safe); invoice email end to end correct; one link correct; at least one receipt has `verdictBy` "Gemini (gemini-3.5-flash-lite)".
 - 5.3 Session 2 to 4 manual checks: create a team, join by code, run from the team view and see it in team history; run a `#quick` link check and see it tagged "via quick" in history; download a real receipt and verify it on `#verify` with both the server check and the browser check.
 - 5.4 Old-receipt regression: after the redeploy, the receipt saved in 5.1 verifies on `#verify` (server and browser). This is the proof the signing key survived.
 - 5.5 A task is marked done only after it was actually run. Unrun checks stay PENDING.
