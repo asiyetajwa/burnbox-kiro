@@ -1,7 +1,7 @@
 # Requirements: live inference with provider-neutral labels
 
 ## Introduction
-The original build labels everything `vultr`. This feature makes labels provider-neutral and points inference at Gemini (`gemini-2.5-flash`) through the existing OpenAI-compatible config.
+The original build labels everything `vultr`. This feature makes labels provider-neutral and points inference at Gemini (`gemini-3.5-flash-lite`) through the existing OpenAI-compatible config.
 
 ## Requirements
 
@@ -14,12 +14,12 @@ User story: as a reader of the API, I want the verdict source to name the kind o
 - WHEN stub mode is off THEN `inference` SHALL be the configured model name (`VULTR_MODEL`), or `'auto'` if unset.
 
 ### R3: Receipt names the author
-- WHEN a verdict is model-written THEN receipt `verdictBy` SHALL be like `Gemini (gemini-2.5-flash)`.
+- WHEN a verdict is model-written THEN receipt `verdictBy` SHALL be like `Gemini (gemini-3.5-flash-lite)`.
 - OTHERWISE `verdictBy` SHALL be `Burn Box rules`.
 
 ### R4: Configuration unchanged
 - The system SHALL keep `VULTR_INFERENCE_API_KEY`, `VULTR_MODEL`, `VULTR_INFERENCE_BASE_URL`, `STUB_LLM`; no new inference plumbing.
-- Defaults for deployment: base URL `https://generativelanguage.googleapis.com/v1beta/openai/`, `VULTR_MODEL=gemini-2.5-flash`, `STUB_LLM=0`. `VULTR_MODEL` SHALL always be set explicitly.
+- Defaults for deployment: base URL `https://generativelanguage.googleapis.com/v1beta/openai/`, `VULTR_MODEL=gemini-3.5-flash-lite`, `STUB_LLM=0`. `VULTR_MODEL` SHALL always be set explicitly.
 
 ### R5: Safety floor preserved
 - The model MAY raise a verdict above the rules floor and SHALL NOT lower it.
