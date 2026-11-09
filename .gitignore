@@ -1,0 +1,8 @@
+node_modules/
+data/
+sandbox/box/debs/*.deb
+.env
+sandbox/browser/debs/*.deb
+sandbox/browser/wheels/*.whl
+film/node_modules
+film/out/

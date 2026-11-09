@@ -1,0 +1,440 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Burn Box</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300..700&family=Geist+Mono:wght@400..600&display=swap">
+<style>
+/* Layout: dark machined hardware. Every panel is a graphite device shell; inputs and records sit in inset wells;
+   the one warm thing is the amber fill, which marks progress and the action. The sealed box is a dial. */
+:root {
+  color-scheme: dark;
+  --bg: #0d0d0e; --grid: rgba(255, 255, 255, .035);
+  --shell-a: #242426; --shell-b: #1b1b1d; --well: #101011; --line: rgba(255, 255, 255, .06);
+  --fg: #ecebe7; --fg-2: #a6a49f; --fg-3: #6f6d69;
+  --amber-a: #ffe383; --amber-b: #f59a3a; --amber-glow: rgba(245, 154, 58, .38);
+  --hot: #ff6b3d; --hot-glow: rgba(255, 107, 61, .35); --safe: #9bd6a9; --sus: #f6c453;
+  --display: "Geist", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "Geist Mono", ui-monospace, Menlo, monospace;
+  --raise: inset 0 1px 0 rgba(255, 255, 255, .07), inset 0 -1px 0 rgba(0, 0, 0, .5), 0 22px 44px -14px rgba(0, 0, 0, .75), 0 2px 5px rgba(0, 0, 0, .45);
+  --raise-sm: inset 0 1px 0 rgba(255, 255, 255, .08), 0 6px 14px -4px rgba(0, 0, 0, .7), 0 1px 2px rgba(0, 0, 0, .5);
+  --sink: inset 0 2px 7px rgba(0, 0, 0, .85), inset 0 -1px 0 rgba(255, 255, 255, .035), 0 1px 0 rgba(255, 255, 255, .04);
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { min-height: 100%; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 400 15px/1.55 var(--display); -webkit-font-smoothing: antialiased;
+  background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px); background-size: 232px 232px; background-position: -1px -1px; }
+button { font: inherit; color: inherit; }
+.shell { max-width: 1200px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: env(safe-area-inset-top, 0px) 48px; }
+.dev { background: linear-gradient(180deg, var(--shell-a), var(--shell-b)); border-radius: 30px; box-shadow: var(--raise); }
+.well { background: var(--well); box-shadow: var(--sink); }
+
+/* Top bar */
+.bar { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 20px; flex-wrap: wrap; }
+.brand { display: flex; align-items: center; gap: 11px; background: none; border: 0; padding: 0; cursor: pointer; }
+.brand svg { width: 34px; height: 34px; }
+.brand b { font-weight: 600; font-size: 18px; letter-spacing: -.02em; }
+.nav { display: flex; gap: 4px; background: var(--well); box-shadow: var(--sink); border-radius: 999px; padding: 5px; }
+.nav button { border: 0; background: none; padding: 9px 18px; border-radius: 999px; font-weight: 500; font-size: 14px; cursor: pointer; color: var(--fg-3); }
+.nav button[aria-current="page"] { background: linear-gradient(180deg, var(--shell-a), var(--shell-b)); color: var(--fg); box-shadow: var(--raise-sm); }
+.where { font: 400 11.5px/1 var(--mono); letter-spacing: .04em; color: var(--fg-3); display: flex; align-items: center; gap: 9px; }
+.where i { width: 7px; height: 7px; border-radius: 50%; background: var(--safe); box-shadow: 0 0 10px var(--safe); }
+
+.eyebrow { font: 400 11.5px/1.4 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--fg-3); margin: 0; }
+h1, h2, h3 { font-family: var(--display); margin: 0; text-wrap: balance; }
+p { margin: 0; }
+.btn { border: 0; cursor: pointer; font-weight: 600; font-size: 15px; padding: 15px 24px; border-radius: 999px; display: inline-flex; align-items: center; gap: 10px; transition: transform .15s, box-shadow .2s; }
+.btn.go { background: linear-gradient(90deg, var(--amber-a), var(--amber-b)); color: #2a1604; box-shadow: 0 0 26px var(--amber-glow), inset 0 1px 0 rgba(255, 255, 255, .55), 0 6px 16px -6px rgba(0, 0, 0, .7); }
+.btn.go:hover { transform: translateY(-1px); box-shadow: 0 0 34px var(--amber-glow), inset 0 1px 0 rgba(255, 255, 255, .55), 0 8px 18px -6px rgba(0, 0, 0, .7); }
+.btn.go:disabled { background: var(--well); color: var(--fg-3); box-shadow: var(--sink); cursor: not-allowed; transform: none; }
+.btn.ghost { background: linear-gradient(180deg, var(--shell-a), var(--shell-b)); color: var(--fg); box-shadow: var(--raise-sm); }
+.btn:focus-visible, .nav button:focus-visible, .sample:focus-visible, .seg button:focus-visible, .drop:focus-within, #clear:focus-visible { outline: 2px solid var(--amber-b); outline-offset: 3px; }
+
+/* New run */
+.new { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr); gap: 22px; padding-top: 22px; }
+.new h1 { font-size: clamp(44px, 6vw, 76px); font-weight: 600; line-height: .98; letter-spacing: -.045em; }
+.new h1 span { background: linear-gradient(90deg, var(--amber-a), var(--amber-b)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.new .lede { color: var(--fg-2); font-size: 17px; font-weight: 300; max-width: 34em; margin-top: 18px; }
+.intake { padding: 22px; display: grid; gap: 16px; margin-top: 28px; }
+.seg { display: inline-flex; background: var(--well); box-shadow: var(--sink); border-radius: 999px; padding: 5px; width: fit-content; }
+.seg button { border: 0; background: none; padding: 9px 20px; border-radius: 999px; cursor: pointer; font-weight: 500; font-size: 14px; color: var(--fg-3); }
+.seg button[aria-pressed="true"] { background: linear-gradient(180deg, var(--shell-a), var(--shell-b)); color: var(--fg); box-shadow: var(--raise-sm); }
+.drop { border-radius: 24px; background: var(--well); box-shadow: var(--sink); padding: 30px 18px; display: grid; place-items: center; gap: 10px; text-align: center; cursor: pointer; position: relative; transition: box-shadow .2s; }
+.drop.over { box-shadow: var(--sink), 0 0 0 1.5px var(--amber-b), 0 0 30px var(--amber-glow); }
+.drop input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.drop svg { color: var(--fg-2); }
+.drop b { font-weight: 500; font-size: 20px; letter-spacing: -.02em; }
+.drop small { color: var(--fg-3); font-size: 13px; }
+.chosen { display: flex; align-items: center; gap: 14px; border-radius: 22px; padding: 12px 16px; background: linear-gradient(180deg, var(--shell-a), var(--shell-b)); box-shadow: var(--raise-sm); }
+.chosen i { width: 36px; height: 36px; border-radius: 50%; flex: none; background: radial-gradient(circle at 50% 38%, var(--amber-a), var(--amber-b)); box-shadow: 0 0 16px var(--amber-glow); }
+.chosen b { font: 500 14px/1.2 var(--mono); overflow-wrap: anywhere; }
+.chosen span { display: block; font-size: 12.5px; color: var(--fg-3); }
+.chosen button { margin-left: auto; border: 0; background: none; color: var(--fg-2); cursor: pointer; font-size: 13px; text-decoration: underline; text-underline-offset: 3px; }
+.link-in { display: grid; gap: 9px; }
+.link-in label { font-weight: 500; font-size: 14px; }
+.link-in input { font: 400 15px/1 var(--mono); padding: 17px 20px; border-radius: 999px; border: 0; background: var(--well); box-shadow: var(--sink); color: var(--fg); width: 100%; }
+.link-in input:focus { outline: none; box-shadow: var(--sink), 0 0 0 1.5px var(--amber-b); }
+.link-in small { color: var(--fg-3); font-size: 13px; }
+.go-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.go-row p { font-size: 13px; color: var(--fg-3); max-width: 36ch; }
+.side { display: grid; gap: 14px; align-content: start; padding-top: 8px; }
+.samples { display: grid; gap: 10px; }
+.sample { text-align: left; border: 0; cursor: pointer; background: linear-gradient(180deg, var(--shell-a), var(--shell-b)); box-shadow: var(--raise-sm); border-radius: 24px; padding: 14px 16px; display: grid; grid-template-columns: 46px minmax(0, 1fr); gap: 3px 14px; align-items: center; transition: transform .15s, box-shadow .2s; }
+.sample:hover { transform: translateY(-1px); }
+.sample[aria-pressed="true"] { box-shadow: var(--raise-sm), 0 0 0 1.5px var(--amber-b), 0 0 24px var(--amber-glow); }
+.sample .ico { grid-row: span 2; width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; font: 500 10.5px/1 var(--mono); color: var(--fg-2); background: radial-gradient(circle at 50% 35%, #2c2c2e, #151516); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08), 0 4px 10px rgba(0, 0, 0, .6), 0 0 0 1px rgba(255, 255, 255, .03); }
+.sample b { font: 500 14px/1.2 var(--mono); }
+.sample span { font-size: 13px; color: var(--fg-2); }
+.how { padding: 18px 20px; display: grid; gap: 10px; }
+.how ol { margin: 0; padding-left: 20px; display: grid; gap: 7px; color: var(--fg-2); font-size: 14px; font-weight: 300; }
+
+/* Run view */
+.run { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 22px; padding-top: 12px; }
+.run-head { grid-column: 1 / -1; display: flex; align-items: end; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.run-head h2 { font-size: clamp(28px, 3.6vw, 42px); font-weight: 600; letter-spacing: -.035em; line-height: 1.05; overflow-wrap: anywhere; margin-top: 6px; }
+.status { font: 500 12px/1 var(--mono); letter-spacing: .04em; padding: 10px 14px; border-radius: 999px; background: linear-gradient(180deg, var(--shell-a), var(--shell-b)); box-shadow: var(--raise-sm); display: inline-flex; gap: 9px; align-items: center; color: var(--fg-2); }
+.status i { width: 8px; height: 8px; border-radius: 50%; background: var(--amber-b); box-shadow: 0 0 10px var(--amber-b); animation: pulse 1.2s ease-in-out infinite; }
+.status.done i { animation: none; background: var(--safe); box-shadow: 0 0 10px var(--safe); }
+@keyframes pulse { 50% { opacity: .35; } }
+.chamber { padding: 20px; display: grid; gap: 16px; align-content: start; min-width: 0; }
+.steps { display: grid; gap: 8px; }
+.track { position: relative; height: 54px; border-radius: 999px; background: var(--well); box-shadow: var(--sink); padding: 7px; display: flex; align-items: center; }
+.track i { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--amber-a), var(--amber-b)); box-shadow: 0 0 24px var(--amber-glow), inset 0 1px 0 rgba(255, 255, 255, .5); transition: width .6s cubic-bezier(.3, .8, .3, 1); min-width: 40px; }
+.track b { position: absolute; right: 22px; font: 500 15px/1 var(--display); font-variant-numeric: tabular-nums; }
+.steps-label { display: flex; justify-content: space-between; font-size: 14px; color: var(--fg-2); padding-inline: 6px; }
+.steps-label span:first-child { color: var(--fg); font-weight: 500; }
+.box-wrap { position: relative; aspect-ratio: 4 / 3; max-width: 100%; border-radius: 24px; overflow: hidden; background: radial-gradient(ellipse 55% 55% at 50% 50%, #18181a, #111112 75%); box-shadow: var(--sink); }
+.box-wrap svg { width: 100%; height: 100%; display: block; }
+.knurl { transform-origin: 0 0; transform-box: view-box; }
+.spinning .knurl { animation: spin 14s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.stamp { position: absolute; right: 6%; top: 7%; width: 28%; max-width: 140px; transform: rotate(-12deg) scale(.6); opacity: 0; transition: transform .45s cubic-bezier(.2, 1.6, .4, 1), opacity .25s; }
+.stamp.on { opacity: 1; transform: rotate(-12deg) scale(1); }
+.page-shot { position: absolute; left: 50%; top: 50%; width: 46%; transform: translate(-50%, -52%); background: #fff; color: #222; border-radius: 10px; box-shadow: 0 18px 40px -12px rgba(0, 0, 0, .8), 0 0 0 1px rgba(255, 255, 255, .06); font: 400 10px/1.4 system-ui, sans-serif; overflow: hidden; opacity: 0; transition: opacity .4s; }
+.page-shot.on { opacity: 1; }
+.page-shot:has(img) { width: 64%; }
+.page-shot img { display: block; width: 100%; height: auto; }
+.page-shot .url { background: #eef0f2; font: 400 8.5px/1 var(--mono); padding: 5px 7px; color: #555; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.page-shot .pg { padding: 10px 12px 12px; display: grid; gap: 6px; }
+.page-shot .pg b { font: 700 12px/1.2 system-ui, sans-serif; }
+.page-shot .fld { border: 1px solid #ccd; border-radius: 3px; padding: 4px 6px; font: 400 8.5px/1.2 var(--mono); color: #333; min-height: 18px; }
+.page-shot .sub { background: #2c4bd6; color: #fff; border-radius: 3px; text-align: center; padding: 5px; font-weight: 600; }
+.canaries { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.canary { border-radius: 999px; padding: 8px 14px 8px 8px; display: grid; grid-template-columns: 38px minmax(0, 1fr); gap: 0 10px; align-items: center; background: linear-gradient(180deg, var(--shell-a), var(--shell-b)); box-shadow: var(--raise-sm); }
+.canary i { grid-row: span 2; width: 38px; height: 38px; border-radius: 50%; background: radial-gradient(circle at 50% 35%, #2c2c2e, #141415); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08), 0 3px 8px rgba(0, 0, 0, .6); transition: background .3s, box-shadow .3s; }
+.canary b { font: 500 12.5px/1.2 var(--display); }
+.canary span { font: 400 11px/1.2 var(--mono); color: var(--fg-3); }
+.canary.hit i { background: radial-gradient(circle at 50% 38%, var(--amber-a), var(--amber-b)); box-shadow: 0 0 22px var(--amber-glow), inset 0 1px 0 rgba(255, 255, 255, .6); }
+.canary.hit span { color: var(--amber-a); }
+.counts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.count { background: var(--well); box-shadow: var(--sink); border-radius: 20px; padding: 14px 16px; }
+.count b { display: block; font: 500 32px/1 var(--display); letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+.count span { font: 400 10.5px/1.3 var(--mono); letter-spacing: .05em; text-transform: uppercase; color: var(--fg-3); }
+.count.bump b { color: var(--hot); text-shadow: 0 0 18px var(--hot-glow); }
+.trace-col { display: grid; gap: 14px; align-content: start; min-width: 0; }
+.trace { background: #0a0a0b; box-shadow: var(--sink); border-radius: 24px; padding: 18px; font: 400 12.5px/1.8 var(--mono); color: #cfccc6; min-height: 360px; max-height: 500px; overflow: auto; }
+.trace .ln { display: grid; grid-template-columns: 64px 70px minmax(0, 1fr); gap: 8px; animation: in .25s ease-out; }
+.trace .ln time { color: #5c5a57; }
+.trace .ln b { font-weight: 500; }
+.trace .ln span { overflow-wrap: anywhere; }
+.t-box b { color: #a6a49f; } .t-exec b { color: #c4b8ff; } .t-canary b { color: var(--amber-a); } .t-egress b, .t-deny b { color: var(--hot); } .t-note b { color: #98c2e6; } .t-ok b { color: var(--safe); }
+.trace .cursor { display: inline-block; width: 8px; height: 15px; background: var(--amber-b); vertical-align: -3px; animation: pulse 1s steps(2) infinite; }
+@keyframes in { from { opacity: 0; transform: translateY(4px); } }
+.note { border-radius: 20px; padding: 14px 18px; font-size: 13.5px; color: var(--fg-2); font-weight: 300; }
+
+/* Email intake */
+.email-in { display: grid; gap: 14px; }
+.forward { border-radius: 24px; padding: 18px 20px; background: var(--well); box-shadow: var(--sink); display: grid; gap: 10px; }
+.forward p:not(.eyebrow) { color: var(--fg-2); font-size: 14px; font-weight: 300; }
+.forward b { color: var(--fg); font-weight: 500; }
+.addr { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.addr code { font: 500 17px/1 var(--mono); padding: 14px 18px; border-radius: 999px; background: linear-gradient(180deg, var(--shell-a), var(--shell-b)); box-shadow: var(--raise-sm); color: var(--amber-a); overflow-wrap: anywhere; }
+.addr .btn { padding: 12px 18px; font-size: 14px; }
+.forward small { color: var(--fg-3); font-size: 12.5px; }
+.drop.small { padding: 18px; gap: 6px; }
+.drop.small b { font-size: 16px; }
+
+/* Email run */
+.env { border-radius: 22px; padding: 16px 18px; display: grid; gap: 8px; }
+.env dl { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 16px; margin: 0; font-size: 14px; }
+.env dt { font: 400 11.5px/1.9 var(--mono); color: var(--fg-3); text-transform: uppercase; letter-spacing: .05em; }
+.env dd { margin: 0; overflow-wrap: anywhere; }
+.flags { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.flags li { display: grid; grid-template-columns: 12px minmax(0, 1fr); gap: 2px 12px; align-items: baseline; padding: 11px 16px; border-radius: 18px; background: linear-gradient(180deg, var(--shell-a), var(--shell-b)); box-shadow: var(--raise-sm); animation: in .3s ease-out; }
+.flags li i { width: 9px; height: 9px; border-radius: 50%; grid-row: span 2; transform: translateY(1px); }
+.flags li b { font-weight: 500; font-size: 14px; }
+.flags li span { font-size: 12.5px; color: var(--fg-2); overflow-wrap: anywhere; }
+.flags li.high i { background: var(--hot); box-shadow: 0 0 10px var(--hot); }
+.flags li.medium i { background: var(--sus); box-shadow: 0 0 10px var(--sus); }
+.flags li.low i { background: var(--fg-3); }
+.flags li.ok i { background: var(--safe); box-shadow: 0 0 10px var(--safe); }
+.kids { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 12px; }
+.kid { border-radius: 26px; padding: 14px; display: grid; grid-template-columns: 76px minmax(0, 1fr); gap: 12px; align-items: center; animation: in .35s ease-out; border: 0; text-align: left; color: inherit; font: inherit; }
+button.kid { cursor: pointer; }
+.kid svg { width: 76px; height: 76px; display: block; }
+.kid b { display: block; font: 500 13.5px/1.25 var(--mono); overflow-wrap: anywhere; }
+.kid span { display: block; font-size: 12.5px; color: var(--fg-3); margin-top: 3px; }
+.kid .pill { margin-top: 8px; }
+.kid.pending svg { opacity: .55; }
+.kid .k-spin { transform-box: view-box; transform-origin: 0 0; }
+.kid.live .k-spin { animation: spin 6s linear infinite; }
+
+/* Verdict */
+.verdict { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, .8fr); gap: 22px; padding-top: 12px; }
+.v-card { overflow: hidden; }
+.v-top { padding: 26px 26px 20px; display: grid; gap: 8px; --w: 50%; --fill: linear-gradient(90deg, var(--amber-a), var(--amber-b)); --glow: var(--amber-glow); }
+.v-top.mal { --w: 96%; --fill: linear-gradient(90deg, var(--amber-a), var(--amber-b) 45%, var(--hot)); --glow: var(--hot-glow); }
+.v-top.sus { --w: 58%; }
+.v-top.safe { --w: 14%; --fill: linear-gradient(90deg, #d6f2dc, var(--safe)); --glow: rgba(155, 214, 169, .3); }
+.v-top h2 { font-size: clamp(52px, 7.5vw, 92px); font-weight: 600; letter-spacing: -.05em; line-height: .95; }
+.v-top.mal h2 { color: var(--hot); } .v-top.sus h2 { color: var(--sus); } .v-top.safe h2 { color: var(--safe); }
+.v-top > p:last-child { font: 400 12.5px/1.4 var(--mono); color: var(--fg-3); }
+.v-top::after { content: ""; display: block; height: 30px; border-radius: 999px; margin-top: 10px; background: var(--fill) no-repeat 6px 50% / calc(var(--w) - 12px) 18px, var(--well); box-shadow: var(--sink), 0 0 0 0 transparent; filter: drop-shadow(0 0 14px var(--glow)); }
+.v-body { padding: 4px 26px 26px; display: grid; gap: 20px; }
+.v-body > p { font-size: 17px; line-height: 1.6; max-width: 60ch; font-weight: 300; color: var(--fg); }
+.tried { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.tried li { display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 10px 12px 10px 10px; border-radius: 999px; background: var(--well); box-shadow: var(--sink); font-size: 14.5px; }
+.tried li i { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font: 500 12px/1 var(--mono); font-style: normal; color: #141415; }
+.tried li em { font: 500 11px/1 var(--mono); font-style: normal; letter-spacing: .04em; text-transform: uppercase; padding: 7px 10px; border-radius: 999px; background: linear-gradient(180deg, var(--shell-a), var(--shell-b)); box-shadow: var(--raise-sm); color: var(--fg-2); white-space: nowrap; }
+details.full { background: var(--well); box-shadow: var(--sink); border-radius: 20px; padding: 14px 16px; }
+details.full summary { cursor: pointer; font-weight: 500; font-size: 14px; }
+details.full .trace { margin-top: 12px; min-height: 0; max-height: 300px; box-shadow: none; padding: 6px 0 0; }
+.receipt { padding: 24px; position: relative; display: grid; gap: 14px; align-content: start; }
+.receipt h3 { font-size: 26px; font-weight: 600; letter-spacing: -.03em; }
+.receipt dl { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px 16px; margin: 0; font: 400 12.5px/1.6 var(--mono); background: var(--well); box-shadow: var(--sink); border-radius: 20px; padding: 16px 18px; }
+.receipt dt { color: var(--fg-3); } .receipt dd { margin: 0; overflow-wrap: anywhere; color: var(--fg); }
+.receipt .stamp-s { position: absolute; right: 18px; top: 14px; width: 88px; transform: rotate(-12deg); }
+.receipt .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
+.receipt small { font-size: 12.5px; color: var(--fg-3); }
+.toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: linear-gradient(180deg, var(--shell-a), var(--shell-b)); box-shadow: var(--raise); color: var(--fg); padding: 13px 20px; border-radius: 999px; font-size: 14px; opacity: 0; pointer-events: none; transition: opacity .25s; z-index: 20; }
+.toast.on { opacity: 1; }
+
+/* Past runs */
+.past { padding-top: 12px; display: grid; gap: 18px; }
+.past h2 { font-size: clamp(32px, 4.4vw, 50px); font-weight: 600; letter-spacing: -.04em; line-height: 1; margin-top: 6px; }
+.table-wrap { overflow-x: auto; padding: 8px; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 660px; }
+th, td { text-align: left; padding: 14px 16px; border-bottom: 1px solid var(--line); }
+th { font: 400 11px/1 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--fg-3); }
+td.m { font-family: var(--mono); font-size: 13px; font-variant-numeric: tabular-nums; }
+tr:last-child td { border-bottom: 0; }
+tbody tr { cursor: pointer; } tbody tr:hover td { background: rgba(255, 255, 255, .025); }
+.pill { font: 500 11px/1 var(--mono); letter-spacing: .04em; text-transform: uppercase; padding: 7px 11px 7px 9px; border-radius: 999px; display: inline-flex; align-items: center; gap: 8px; background: var(--well); box-shadow: var(--sink); }
+.pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; }
+.pill.safe { color: var(--safe); } .pill.safe::before { background: var(--safe); box-shadow: 0 0 8px var(--safe); }
+.pill.sus { color: var(--sus); } .pill.sus::before { background: var(--sus); box-shadow: 0 0 8px var(--sus); }
+.pill.mal { color: var(--hot); } .pill.mal::before { background: var(--hot); box-shadow: 0 0 8px var(--hot); }
+
+.mock-tag { margin-top: 34px; font-size: 12.5px; color: var(--fg-3); font-weight: 300; }
+
+@media (max-width: 900px) {
+  .new, .run, .verdict { grid-template-columns: minmax(0, 1fr); }
+  .trace { min-height: 220px; max-height: 340px; }
+}
+@media (max-width: 560px) {
+  .where { display: none; }
+  .dev { border-radius: 26px; }
+  .intake, .chamber { padding: 16px; }
+  .canaries, .counts { gap: 7px; }
+  .canary { grid-template-columns: 28px minmax(0, 1fr); padding: 6px 10px 6px 6px; gap: 0 7px; }
+  .canary i { width: 28px; height: 28px; }
+  .canary b { font-size: 11px; } .canary span { font-size: 9.5px; }
+  .count { padding: 12px; } .count b { font-size: 26px; } .count span { font-size: 9.5px; }
+  .track { height: 48px; }
+  .trace .ln { grid-template-columns: 58px minmax(0, 1fr); }
+  .trace .ln time { grid-row: span 2; }
+  .tried li { grid-template-columns: 30px minmax(0, 1fr); border-radius: 22px; }
+  .tried li em { grid-column: 2; justify-self: start; }
+  .v-top, .v-body { padding-inline: 18px; }
+  .receipt .stamp-s { width: 66px; }
+}
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="shell">
+  <header class="bar">
+    <button class="brand" type="button" data-go="new" aria-label="Burn Box, start a new run">
+      <svg viewBox="-50 -50 100 100" aria-hidden="true"><g id="logo"></g></svg>
+      <b>Burn Box</b>
+    </button>
+    <nav class="nav" aria-label="Main">
+      <button type="button" data-go="new" aria-current="page">New Run</button>
+      <button type="button" data-go="past">Past Runs</button>
+    </nav>
+    <span class="where" id="where"><i></i>Vultr · Checking the Box</span>
+  </header>
+
+  <!-- 1. New run -->
+  <main id="v-new">
+    <section class="new">
+      <div>
+        <h1>What are you <span>afraid to open?</span></h1>
+        <p class="lede">Hand it over. Burn Box opens it inside a sealed box with no internet, watches everything it tries, then burns the box. You get a plain verdict and a receipt.</p>
+        <div class="intake dev">
+          <div class="seg" role="group" aria-label="What to check">
+            <button type="button" id="m-file" aria-pressed="true">A File</button>
+            <button type="button" id="m-link" aria-pressed="false">A Link</button>
+            <button type="button" id="m-email" aria-pressed="false">An Email</button>
+          </div>
+          <div id="file-pane">
+            <label class="drop" id="drop">
+              <input type="file" id="file-in" aria-label="Choose a file">
+              <svg viewBox="-50 -50 100 100" width="58" height="58" aria-hidden="true"><g id="open-cube"></g></svg>
+              <b>Drop the file here</b>
+              <small>Or tap to choose. Scripts, documents, archives, up to 25 MB.</small>
+            </label>
+          </div>
+          <div id="link-pane" class="link-in" hidden>
+            <label for="link">Paste the link</label>
+            <input id="link" type="url" inputmode="url" placeholder="https://" autocomplete="off">
+            <small>A browser inside the box visits it. If the page asks for a login, the box types fake details, so nothing real is ever entered.</small>
+          </div>
+          <div id="email-pane" class="email-in" hidden>
+            <div class="forward">
+              <p class="eyebrow">Don't Open It. Forward It.</p>
+              <p>In your inbox, right-click the email and choose <b>Forward as Attachment</b>, then send it to:</p>
+              <div class="addr"><code id="fwd-addr">check@your-burnbox-domain</code><button type="button" class="btn ghost" id="copy-addr">Copy</button></div>
+              <small id="fwd-note">The verdict appears in Past Runs within a minute.</small>
+            </div>
+            <label class="drop small" id="eml-drop">
+              <input type="file" id="eml-in" accept=".eml,message/rfc822" aria-label="Choose a saved email">
+              <b>Or drop the saved email (.eml)</b>
+              <small>The email is opened inside a box. Every link and attachment gets a box of its own.</small>
+            </label>
+          </div>
+          <div id="chosen" class="chosen" hidden><i></i><div><b></b><span></span></div><button type="button" id="clear">Change</button></div>
+          <div class="go-row">
+            <button class="btn go" type="button" id="detonate" disabled>Detonate It</button>
+            <p>The box has no route to the internet and is destroyed when the run ends.</p>
+          </div>
+        </div>
+      </div>
+      <aside class="side">
+        <p class="eyebrow">Or Try a Test Sample</p>
+        <div class="samples">
+          <button class="sample" type="button" data-sample="email" aria-pressed="false"><span class="ico">EML</span><b>invoice_overdue.eml</b><span>The whole "invoice overdue" email: sender, link and attachment</span></button>
+          <button class="sample" type="button" data-sample="invoice" aria-pressed="false"><span class="ico">.PY</span><b>invoice_sample.py</b><span>An "invoice helper" from an overdue invoice email</span></button>
+          <button class="sample" type="button" data-sample="phish" aria-pressed="false"><span class="ico">URL</span><b>phish_page</b><span>A login page asking you to sign in to see an invoice</span></button>
+          <button class="sample" type="button" data-sample="benign" aria-pressed="false"><span class="ico">.PY</span><b>benign_sample.py</b><span>A harmless script that writes one note</span></button>
+        </div>
+        <div class="how dev">
+          <p class="eyebrow">What Happens</p>
+          <ol>
+            <li>A fresh box is sealed: no internet, read-only system, strict time and memory limits.</li>
+            <li>Fake secrets are planted inside: a cloud key, a crypto wallet, a password.</li>
+            <li>The file runs, or the link opens, while every move is recorded.</li>
+            <li>The box is destroyed. An AI on Vultr reads the record and writes the verdict.</li>
+          </ol>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <!-- 2. Live run -->
+  <main id="v-run" hidden>
+    <section class="run">
+      <div class="run-head">
+        <div><p class="eyebrow" id="r-id">Run</p><h2 id="r-name">file</h2></div>
+        <span class="status" id="r-status"><i></i><span>Detonating</span></span>
+      </div>
+      <div class="chamber dev">
+        <div class="steps" id="steps"></div>
+        <div class="box-wrap">
+          <svg id="box" viewBox="-200 -160 400 320" aria-label="The sealed box"></svg>
+          <div class="page-shot" id="shot" aria-hidden="true">
+            <div class="url">http://invoices-portal.lab.test/view?inv=88213</div>
+            <div class="pg"><b>Sign in to view invoice #88213</b><div class="fld" id="f-user"></div><div class="fld" id="f-pass"></div><div class="sub">Sign In</div></div>
+          </div>
+          <svg class="stamp" id="stamp" viewBox="-60 -60 120 120" aria-hidden="true"></svg>
+        </div>
+        <div class="canaries" id="canaries"></div>
+        <div class="counts">
+          <div class="count" id="c-egress"><b>0</b><span>Egress Blocked</span></div>
+          <div class="count" id="c-deny"><b>0</b><span>Writes Denied</span></div>
+          <div class="count" id="c-proc"><b>0</b><span>Processes</span></div>
+        </div>
+      </div>
+      <div class="trace-col">
+        <p class="eyebrow">Live Record</p>
+        <div class="trace" id="trace" aria-live="polite"></div>
+        <p class="note dev" id="r-note">Everything here happens inside the box. Your computer and your network are never touched.</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- 2b. Live email run: the envelope, then one box per link and attachment -->
+  <main id="v-email" hidden>
+    <section class="run">
+      <div class="run-head">
+        <div><p class="eyebrow" id="e-id">Run</p><h2 id="e-name">email</h2></div>
+        <span class="status" id="e-status"><i></i><span>Opening the Email</span></span>
+      </div>
+      <div class="chamber dev">
+        <div class="steps" id="e-steps"></div>
+        <div class="env well" id="env">
+          <p class="eyebrow">Envelope</p>
+          <dl id="env-dl"><dt>From</dt><dd id="env-from">Reading inside the box</dd><dt>Subject</dt><dd id="env-subject"></dd></dl>
+        </div>
+        <div><p class="eyebrow" style="margin-bottom:10px">Red Flags</p><ul class="flags" id="flags"></ul></div>
+      </div>
+      <div class="trace-col">
+        <p class="eyebrow">Boxes</p>
+        <div class="kids" id="kids"><div class="kid dev pending"><svg viewBox="-60 -60 120 120"></svg><div><b>Email</b><span>Opening in a sealed box</span></div></div></div>
+        <p class="eyebrow">Live Record</p>
+        <div class="trace" id="e-trace" aria-live="polite"></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- 3. Verdict -->
+  <main id="v-verdict" hidden>
+    <section class="verdict">
+      <article class="v-card dev">
+        <div class="v-top" id="v-top"><p class="eyebrow" id="v-runid"></p><h2 id="v-word"></h2><p id="v-file"></p></div>
+        <div class="v-body">
+          <p id="v-summary"></p>
+          <div class="counts" id="v-counts"></div>
+          <div id="v-children" hidden><p class="eyebrow" style="margin-bottom:10px">Boxes Burned</p><div class="kids" id="v-kids"></div></div>
+          <div><p class="eyebrow" style="margin-bottom:10px">What It Tried</p><ul class="tried" id="v-tried"></ul></div>
+          <details class="full"><summary>Full Record</summary><div class="trace" id="v-trace"></div></details>
+        </div>
+      </article>
+      <aside class="receipt dev">
+        <svg class="stamp-s" id="stamp2" viewBox="-60 -60 120 120" aria-hidden="true"></svg>
+        <p class="eyebrow">Signed</p>
+        <h3>Destruction Receipt</h3>
+        <dl id="rc"></dl>
+        <small>Signed by this Burn Box server. Anyone can check the signature against its public key.</small>
+        <div class="actions">
+          <button class="btn go" type="button" id="again">Run Another</button>
+          <button class="btn ghost" type="button" id="dl">Download Receipt</button>
+          <button class="btn ghost" type="button" id="replay">Replay Run</button>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <!-- Past runs -->
+  <main id="v-past" hidden>
+    <section class="past">
+      <div><p class="eyebrow">Your Team</p><h2>Past Runs</h2></div>
+      <div class="table-wrap dev">
+        <table>
+          <thead><tr><th>Run</th><th>What</th><th>Verdict</th><th>Canaries</th><th>Blocked</th><th>Burned At (UTC)</th></tr></thead>
+          <tbody id="past"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <p class="mock-tag" id="foot">Every run happens in a fresh box on Vultr that is destroyed when it ends. Test samples are self-written and harmless outside the box.</p>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script src="app.js" defer></script>
+</body>
+</html>
