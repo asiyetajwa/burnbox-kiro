@@ -73,7 +73,7 @@ docker volume inspect burnbox_burnbox-data | sudo tee /var/backups/burnbox/volum
 diff <(grep -E '"(Name|CreatedAt)"' /var/backups/burnbox/volume-inspect-before-$STAMP.json) \
      <(grep -E '"(Name|CreatedAt)"' /var/backups/burnbox/volume-inspect-after-$STAMP.json) && echo VOLUME SAME
 ```
-Pass: `ok:true`, `docker/box/browser` true, `runtime:"runsc"`, `inference:"gemini-2.5-flash"`, homepage 200, `VOLUME SAME`. Any miss: go to rollback.
+Pass: `ok:true`, `docker/box/browser` true, `runtime:"runsc"`, `inference:"gemini-3.5-flash-lite"`, homepage 200, `VOLUME SAME`. Any miss: go to rollback.
 
 ### 6. Acceptance (tasks.md section 5) 
 Run in the order of R5. Step 5.4 is the key proof: paste the saved old receipt on `#verify`. Expect VALID in both "This server says" and "Your browser says".
