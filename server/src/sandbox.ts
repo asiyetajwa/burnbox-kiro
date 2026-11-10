@@ -61,6 +61,34 @@ export function limitsFor(kind: 'file' | 'link' | 'email'): Record<string, strin
   };
 }
 
+/**
+ * The lab's names (invoices-portal.lab.test, collector.lab.test, gate.lab.test) and their addresses on the lab
+ * network, as `--add-host` flags for a link box. Under gVisor (runsc) a box cannot use Docker's built-in DNS, so
+ * without these the link box cannot even find the lab page or the gate. Read fresh for each link run, because the
+ * lab containers get new addresses when they restart.
+ */
+export async function labHostArgs(network = config.labNetwork): Promise<string[]> {
+  const list = await docker(['network', 'inspect', network, '--format', '{{range $id, $c := .Containers}}{{$id}} {{end}}'], 8000);
+  const ids = list.code === 0 ? list.out.split(/\s+/).filter(Boolean) : [];
+  if (!ids.length) return [];
+  const info = await docker(['inspect', '--format', `{{json (index .NetworkSettings.Networks "${network}")}}`, ...ids], 8000);
+  if (info.code !== 0) return [];
+  const args: string[] = [];
+  const seen = new Set<string>();
+  type Endpoint = { IPAddress?: string; Aliases?: string[] | null; DNSNames?: string[] | null } | null;
+  for (const line of info.out.split('\n').filter(Boolean)) {
+    let n: Endpoint;
+    try { n = JSON.parse(line) as Endpoint; } catch { continue; }
+    if (!n?.IPAddress) continue;
+    for (const host of [...(n.Aliases ?? []), ...(n.DNSNames ?? [])]) {
+      if (!/\.lab\.test$/i.test(host) || seen.has(host)) continue;
+      seen.add(host);
+      args.push('--add-host', `${host}:${n.IPAddress}`);
+    }
+  }
+  return args;
+}
+
 // An email is opened in the same sealed file box (no network): reading it is the risky part.
 type Spec = { kind: 'file' | 'link' | 'email'; name: string; input: Buffer; env: Record<string, string> };
 
@@ -78,7 +106,7 @@ export async function detonate(spec: Spec, onEvent: (e: BoxEvent) => void): Prom
     '--cpus', String(limits.cpus), '--ulimit', 'nofile=512:512', '--ulimit', 'fsize=33554432:33554432',
     '--log-driver', 'none'];
   if (spec.kind !== 'link') args.push('--network', 'none', '--dns', '192.0.2.53');
-  else args.push('--network', config.labNetwork, '--shm-size', '128m');
+  else args.push('--network', config.labNetwork, '--shm-size', '128m', ...(await labHostArgs()));
   if (config.runtime) args.push('--runtime', config.runtime);
   for (const [k, v] of Object.entries(spec.env)) args.push('-e', `${k}=${v}`);
   args.push('-e', `BB_TIMEOUT=${String(limits.seconds)}`);

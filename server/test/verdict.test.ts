@@ -100,3 +100,32 @@ test('stub verdict keeps the floor and writes plain words', async () => {
   assert.ok(!/[—–]/.test(v.summary), 'no em dashes');
   assert.ok(v.tried.some((t) => t.kind === 'canary'));
 });
+
+// The live host once returned Safe for a phishing link the box could not even open (ERR_NAME_NOT_RESOLVED).
+const unloadedLink = {
+  kind: 'link', executed: true, url: 'http://invoices-portal.lab.test/view?inv=88213', pages: [], posts: [], events: [],
+  error: 'Page.goto: net::ERR_NAME_NOT_RESOLVED at http://invoices-portal.lab.test/view?inv=88213',
+};
+
+test('a link whose page never loaded is never called safe', async () => {
+  const f = factsFrom('link', 'invoices-portal.lab.test/view', unloadedLink);
+  assert.ok(f.loadError);
+  const floor = floorOf(f);
+  assert.equal(floor.level, 'suspicious');
+  assert.match(floor.reasons.join(' '), /could not be opened inside the box \(its address could not be found\)/);
+  const v = await writeVerdict(f, unloadedLink, () => {});
+  assert.notEqual(v.level, 'safe');
+  assert.match(v.summary, /cannot call it safe/);
+  assert.ok(v.tried.some((t) => t.outcome === 'Could not load'));
+});
+
+test('a link that loaded is judged on what it did, not on a load error', () => {
+  const f = factsFrom('link', 'example.com', { ...unloadedLink, pages: ['https://example.com/'], error: 'Page.goto: Timeout 15000ms exceeded.' });
+  assert.equal(f.loadError, undefined);
+  assert.equal(floorOf(f).level, 'safe');
+});
+
+test('an email whose link could not be checked is at least suspicious', () => {
+  const e: EmailFacts = { ...phishEmail, findings: [], children: [{ id: 'BBX-0002', kind: 'link', name: 'invoices-portal.lab.test/view', level: 'suspicious', reason: 'The page could not be opened inside the box.', summary: '' }] };
+  assert.equal(emailFloor(e).level, 'suspicious');
+});

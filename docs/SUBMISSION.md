@@ -49,7 +49,7 @@ Each spec's tasks were worked in their own Kiro session, and the suite stayed gr
 
 **Video presentation:** PENDING. Re-cut of the existing film to the new build, under 3 minutes, public on YouTube. Link lands here when Brian uploads it.
 
-**Disclosure:** Burn Box was first built in November 2026 (asiyetajwa/burnbox). This repository is the Kiro rebuild and extension created for Kiroween; the pre-existing code is disclosed here and in the README.
+**Disclosure:** Burn Box was first built in November 2026 (asiyetajwa/burnbox). This repository is the Kiro rebuild and extension created for Kiroween; the pre-existing code is disclosed here and in the README. One post-deploy fix was made outside Kiro, on 2026-11-10. Under gVisor, link boxes could not resolve the lab's names, so a phishing link could not be opened at all. The box now gets those names in its hosts file. A page that never loads is also no longer called Safe: it is marked as not checked.
 
 ## Safety notes for judges
 

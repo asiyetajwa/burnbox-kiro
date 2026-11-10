@@ -24,6 +24,8 @@ export type Facts = {
   pages: string[];
   fsChanged: number;
   note?: string;
+  /** For a link: why the page could not be opened, when it could not. Nothing was observed, so nothing was proven safe. */
+  loadError?: string;
 };
 export type Tried = { what: string; outcome: string; kind: 'canary' | 'egress' | 'deny' | 'note' | 'ok' };
 export type Verdict = {
@@ -73,7 +75,21 @@ export function factsFrom(kind: 'file' | 'link', name: string, report: Record<st
     pages: (Array.isArray(r.pages) ? r.pages : []) as string[],
     fsChanged: ['added', 'removed', 'changed'].reduce((n, k) => n + ((((r.fs as Record<string, unknown[]> | undefined) ?? {})[k]?.length) ?? 0), 0),
     note: typeof r.note === 'string' ? r.note : undefined,
+    loadError: kind === 'link' && typeof r.error === 'string' && !(Array.isArray(r.pages) && r.pages.length) ? r.error : undefined,
   };
+}
+
+/** The reason a link could not be checked, in plain words: the first line of the browser error, without its prefix. */
+function loadReason(err: string): string {
+  const net = /net::(ERR_[A-Z_]+)/.exec(err)?.[1];
+  const plain: Record<string, string> = {
+    ERR_NAME_NOT_RESOLVED: 'its address could not be found',
+    ERR_CONNECTION_REFUSED: 'the site refused the connection',
+    ERR_CONNECTION_TIMED_OUT: 'the site did not answer',
+    ERR_TIMED_OUT: 'the site did not answer',
+    ERR_CERT_AUTHORITY_INVALID: 'its security certificate is not trusted',
+  };
+  return (net && plain[net]) ?? (/Timeout/i.test(err) ? 'it did not finish loading in time' : 'it did not load');
 }
 
 /** The verdict the evidence alone proves. The model can only add severity on top. */
@@ -92,6 +108,8 @@ export function floorOf(f: Facts): { level: Level; reasons: string[] } {
   if (f.indicators.some((i) => /macro|launcher|active content/.test(i))) reasons.push('It contains code that runs by itself when opened.');
   if (f.credentialPosts.length) reasons.push('The page asks for a login.');
   if (f.timedOut) reasons.push('It was still running when the time limit ended it.');
+  // A page that never opened was never checked: that is not evidence of safety.
+  if (f.loadError) reasons.push(`The page could not be opened inside the box (${loadReason(f.loadError)}), so it was not checked.`);
   if (reasons.length) return { level: 'suspicious', reasons };
   return { level: 'safe', reasons: ['It stayed inside its own folder, touched no planted secrets and made no connections.'] };
 }
@@ -108,6 +126,7 @@ function triedFrom(f: Facts): Tried[] {
   if (f.writesDenied.length) t.push({ what: `Write to ${f.writesDenied.slice(0, 3).join(', ')}`, outcome: 'Denied', kind: 'deny' });
   if (f.deletesDenied.length) t.push({ what: `Delete ${f.deletesDenied.slice(0, 3).join(', ')}`, outcome: 'Denied', kind: 'deny' });
   for (const p of f.pages.slice(0, 2)) t.push({ what: `Show the page ${p}`, outcome: 'Screenshot saved', kind: 'note' });
+  if (f.loadError) t.push({ what: `Open the page ${f.name}`, outcome: 'Could not load', kind: 'note' });
   if (!t.length && f.writesInside.length) t.push({ what: `Write ${f.writesInside.map((p) => p.replace('/work/', '')).join(', ')} in its own folder`, outcome: 'Allowed', kind: 'ok' });
   if (!t.length && !f.executed) t.push({ what: f.note ?? 'Nothing the box could run', outcome: 'Static checks only', kind: 'note' });
   return t;
@@ -124,6 +143,7 @@ function stubSummary(f: Facts, level: Level): string {
   if (f.writesDenied.some((p) => p.startsWith('/etc/'))) parts.push('tried to install itself to run again later');
   if (f.deletesDenied.length) parts.push('tried to delete files outside its folder');
   if (!parts.length) {
+    if (f.loadError) return `This link could not be opened inside the box, because ${loadReason(f.loadError)}. Burn Box could not see what the page does, so it cannot call it safe. Do not click it until it can be checked.`;
     if (!f.executed) return `${subject} is not something the box can run, so it was checked without opening it. ${f.indicators.length ? 'It contains signs of code that runs by itself.' : 'Nothing risky was found in it.'}`;
     return `${subject} did only what it appeared to do${f.writesInside.length ? `: it wrote ${f.writesInside.map((p) => p.replace('/work/', '')).join(', ')} in its own folder` : ''}. It never reached for the planted secrets, made no connections and touched nothing outside its folder.`;
   }
