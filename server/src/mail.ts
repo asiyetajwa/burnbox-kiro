@@ -1,6 +1,6 @@
 // Forward It To Burn Box: a small inbound mail receiver. A suspicious email forwarded to check@MAIL_DOMAIN
 // becomes an email run, so nobody has to open the email, click its link or save its attachment.
-// Point the domain's MX record at the Vultr VM and map port 25 to MAIL_PORT. Inbound only: nothing is sent.
+// Point the domain's MX record at the host VM and map port 25 to MAIL_PORT. Inbound only: nothing is sent.
 import { createServer, type Socket } from 'node:net';
 import { createRun } from './runs.ts';
 

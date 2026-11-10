@@ -1,7 +1,7 @@
 {
   "name": "burnbox",
   "version": "0.1.0",
-  "description": "Burn Box: send us the file you're afraid to open. A detonation chamber for small teams, on Vultr.",
+  "description": "Burn Box: send us the file you're afraid to open. A detonation chamber for small teams.",
   "license": "MIT",
   "type": "module",
   "private": true,

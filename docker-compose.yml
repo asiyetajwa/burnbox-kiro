@@ -1,4 +1,4 @@
-# Burn Box on one Vultr VM (Ubuntu 24.04). See README "Deploy on Vultr".
+# Burn Box on one Ubuntu 24.04 VM. The live demo runs on a Google Cloud VM, deployed with deploy/setup-gcp.sh.
 #
 #   docker compose --profile images build   # builds the two box images (file box, link box)
 #   docker compose up -d --build            # starts the app, the Docker proxy, the lab and the gate
