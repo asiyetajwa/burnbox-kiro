@@ -1,6 +1,6 @@
 # Burn Box: Kiroween 2026 submission package
 
-Kiroween 2026 (Devpost), Frankenstein category. Submission deadline: Friday, December 4, 2026, 2:00 PM PT (Saturday, December 5, 01:00 EAT). STATUS: SUBMITTED 2026-11-11 on Brian's go. Live entry: https://devpost.com/software/burn-box-ni49lx (Frankenstein category, 5/5 steps, SUBMITTED TO Kiroween 2026; editable until the deadline). Two form-driven deviations: the elevator pitch uses the 198-character version (Devpost caps it at 200; the package tagline is 228), and no thumbnail was supplied, so Devpost shows its default placeholder. Country of residence was entered as United States from Brian's Devpost profile (San Francisco); flagged to Brian 2026-11-11 in case it should be Kenya.
+Kiroween 2026 (Devpost), Frankenstein category. Submission deadline: Friday, December 4, 2026, 2:00 PM PT (Saturday, December 5, 01:00 EAT). STATUS: SUBMITTED 2026-11-11 on Brian's go. Live entry: https://devpost.com/software/burn-box-ni49lx (Frankenstein category, 5/5 steps, SUBMITTED TO Kiroween 2026; editable until the deadline). Two form-driven deviations: the elevator pitch uses the 198-character version (Devpost caps it at 200; the package tagline is 228), and the thumbnail (the film's end slate: lit dial, name, tagline, Built with Kiro) was added 2026-11-11 to both the Devpost entry and the YouTube video. Country of residence was entered as United States from Brian's Devpost profile (San Francisco); flagged to Brian 2026-11-11 in case it should be Kenya.
 
 ## Fields
 
