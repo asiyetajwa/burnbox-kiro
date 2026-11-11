@@ -52,6 +52,7 @@ Each spec's tasks were worked in their own Kiro session, and the suite stayed gr
 **Disclosure:** Burn Box was first built in November 2026 (asiyetajwa/burnbox). This repository is the Kiro rebuild and extension created for Kiroween; the pre-existing code is disclosed here and in the README. Two post-deploy fixes were made outside Kiro, on 2026-11-10:
 - **Link boxes.** Under gVisor, link boxes could not resolve the lab's names, so a phishing link could not be opened at all. The box now gets those names in its hosts file. A page that never loads is also no longer called Safe: it is marked as not checked.
 - **Verify page layout.** The receipt check rows wrapped one word per line; they now span the full width (a style-only fix).
+- **Quick-check card.** Its reason rows wrapped one word per line, and its headline and severity bar ignored the verdict level. Both are fixed (2026-11-11).
 
 ## Safety notes for judges
 

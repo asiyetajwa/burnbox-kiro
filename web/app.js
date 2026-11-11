@@ -623,6 +623,7 @@
       $('#q-status').textContent = 'The check did not finish.';
       return;
     }
+    $('#q-card .v-top').className = `v-top ${CLS[r.verdict.level]}`; // colours the headline and fills the severity bar
     $('#q-head').textContent = r.verdict.headline || WORD[r.verdict.level];
     $('#q-summary').textContent = r.verdict.summary;
     $('#q-reasons').innerHTML = (r.verdict.reasons ?? []).map((t) => `<li><span>${esc(t)}</span></li>`).join('');
