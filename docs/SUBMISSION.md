@@ -1,6 +1,6 @@
 # Burn Box: Kiroween 2026 submission package
 
-Kiroween 2026 (Devpost), Frankenstein category. Submission deadline: Friday, December 4, 2026, 2:00 PM PT (Saturday, December 5, 01:00 EAT). STATUS: package prepared 2026-11-09, copy fixed 2026-11-11 to Brian's repurposing rule; recut video live; submission itself needs Brian's go.
+Kiroween 2026 (Devpost), Frankenstein category. Submission deadline: Friday, December 4, 2026, 2:00 PM PT (Saturday, December 5, 01:00 EAT). STATUS: SUBMITTED 2026-11-11 on Brian's go. Live entry: https://devpost.com/software/burn-box-ni49lx (Frankenstein category, 5/5 steps, SUBMITTED TO Kiroween 2026; editable until the deadline). Two form-driven deviations: the elevator pitch uses the 198-character version (Devpost caps it at 200; the package tagline is 228), and no thumbnail was supplied, so Devpost shows its default placeholder. Country of residence was entered as United States from Brian's Devpost profile (San Francisco); flagged to Brian 2026-11-11 in case it should be Kenya.
 
 ## Fields
 
