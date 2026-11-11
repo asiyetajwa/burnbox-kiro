@@ -14,7 +14,7 @@ Small teams get the same phishing emails as big companies, without a security te
 
 Burn Box answers it for them, and nobody has to open anything. Forward the suspicious email to Burn Box, or drop in a file or a link. Even reading the email happens inside a sealed box: Burn Box checks who really sent it, whether the sender's domain vouched for it, where replies really go, and whether its links lie about where they lead. Then it splits the email up. Every link and every attachment gets a fresh box of its own, running side by side.
 
-For each part, Burn Box seals a fresh container on a Google Cloud VM: no network, a read-only system, no privileges, strict CPU, memory, process and time limits, and gVisor as a second kernel wall. It plants fake secrets inside (a cloud key, a crypto wallet, a password file) whose only job is to be reached for. Then it detonates the sample. Files run under strace, and links open in headless Chromium on a private lab network. Every file touch, process, connection attempt and form submission streams live to the screen. When the run ends, the box is destroyed and its removal confirmed.
+For each part, Burn Box seals a fresh container on a cloud VM: no network, a read-only system, no privileges, strict CPU, memory, process and time limits, and gVisor as a second kernel wall. It plants fake secrets inside (a cloud key, a crypto wallet, a password file) whose only job is to be reached for. Then it detonates the sample. Files run under strace, and links open in headless Chromium on a private lab network. Every file touch, process, connection attempt and form submission streams live to the screen. When the run ends, the box is destroyed and its removal confirmed.
 
 The model reads the behavioural record and writes the verdict in plain English: what the sample pretended to be, what it actually tried, which canaries it reached for, how many escape attempts the wall stopped, and safe, suspicious or malicious with reasons. A rules floor from the evidence sets the minimum verdict; the model can raise it but never lower it, so a sample cannot talk its way to a softer verdict. If the model is unreachable, the rules verdict stands and the receipt says so honestly.
 
@@ -37,7 +37,7 @@ Burn Box's Kiroween build was developed spec-first in Kiro, and the repository c
 
 Each spec's tasks were worked in their own Kiro session, and the suite stayed green throughout: typecheck passes and 31 tests pass, including new tests for teams, quick checks and receipt verification. The specs also drove two production fixes after deployment: a file-permissions failure in the deploy script, and a model retirement (the originally specified model was withdrawn for new API keys; the build now runs on its verified successor, and the specs were updated to match reality).
 
-**Technology tags:** Kiro, Google Cloud, Docker, gVisor, Playwright, Chromium, strace, Node.js, TypeScript, Python, Server-Sent Events, Ed25519
+**Technology tags:** Kiro, Cloud, Docker, gVisor, Playwright, Chromium, strace, Node.js, TypeScript, Python, Server-Sent Events, Ed25519
 
 **Category tags:** Security, AI Agents, Sandboxing, Small Business
 
