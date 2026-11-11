@@ -47,7 +47,7 @@ Each spec's tasks were worked in their own Kiro session, and the suite stayed gr
 
 **Test access for judges:** No account or credentials needed. The demo is open: run a sample, a file, or a link from the homepage. To try the team workspace, create a team on the site and note the code it shows once; the quick check is the link field marked quick, and receipt verification is the verify view linked from every receipt.
 
-**Video presentation:** https://www.youtube.com/watch?v=slVZyXwPmtc — Burn Box For Arbiter Launch Video, 2:01, public on YouTube.
+**Video presentation:** https://www.youtube.com/watch?v=fnAlu5PuxK0 — Burn Box For Arbiter Launch Video, 2:01, public on YouTube.
 
 **Post-deploy fixes:** Three fixes landed after the first deploy:
 - **Link boxes.** Under gVisor, link boxes could not resolve the lab's names, so a phishing link could not be opened at all. The box now gets those names in its hosts file. A page that never loads is also no longer called Safe: it is marked as not checked.
